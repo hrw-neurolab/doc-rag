@@ -1,0 +1,7 @@
+beanie
+black
+fastapi[standard]
+pydantic-extra-types
+pydantic-settings
+pyjwt
+passlib[bcrypt]
