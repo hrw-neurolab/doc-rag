@@ -13,7 +13,7 @@ from src.auth.util import (
     get_password_hash,
     verify_password,
 )
-from src.users.models import CreateUserBody, User, UserDB
+from src.users.models import CreateUserBody, UserDB
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -37,10 +37,9 @@ async def register(body: CreateUserBody) -> TokensWithUser:
         last_name=body.last_name,
     ).insert()
 
-    user = User(**user.model_dump(by_alias=True))
-
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))
+
     return TokensWithUser(
         access_token=access_token, refresh_token=refresh_token, user=user
     )

@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from src.auth.util import decode_token
 from src.config import CONFIG
-from src.users.models import User, UserDB
+from src.users.models import UserDB
 
 
 OAUTH2 = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -37,11 +37,11 @@ async def current_user(token: Annotated[str, Depends(OAUTH2)]) -> UserDB:
     return user
 
 
-def current_user_id(user: Annotated[User, Depends(current_user)]) -> PydanticObjectId:
+def current_user_id(user: Annotated[UserDB, Depends(current_user)]) -> PydanticObjectId:
     """Returns the ID of the currently authenticated user.
 
     Args:
-        user (User): The authenticated user object.
+        user (UserDB): The authenticated user object.
 
     Returns:
         PydanticObjectId: The ID of the authenticated user.
