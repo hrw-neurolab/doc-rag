@@ -4,7 +4,7 @@ from fastapi.responses import StreamingResponse
 
 from src.auth.dependencies import current_user
 from src.chat.models import ResourceChatBody
-from src.nlp.chat import stream_response
+from src.nlp.chat import stream_response, clear_chat
 from src.nlp.embeddings import similarity_search
 from src.users.models import UserDB
 
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 @router.post("")
-async def resource_chat(
+async def chat(
     body: ResourceChatBody, user: Annotated[UserDB, Depends(current_user)]
 ) -> StreamingResponse:
     """Chat with resources based on the provided query and resource IDs.
@@ -43,3 +43,13 @@ async def resource_chat(
     generator = stream_response(body.query, chunks, user.id)
 
     return StreamingResponse(content=generator, media_type="text/event-stream")
+
+
+@router.post("/clear", status_code=status.HTTP_204_NO_CONTENT)
+async def clear(user: Annotated[UserDB, Depends(current_user)]) -> None:
+    """Clear the chat history for the authenticated user.
+
+    Args:
+        user (UserDB): The authenticated user making the request.
+    """
+    clear_chat(user.id)

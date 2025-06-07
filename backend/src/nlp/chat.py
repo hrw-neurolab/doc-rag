@@ -89,3 +89,13 @@ async def stream_response(
 
     async for chunk in __HISTORY_CHAIN.astream(variables, config):
         yield chunk.content
+
+
+def clear_chat(user_id: PydanticObjectId) -> None:
+    """Clear the chat history for the given user ID.
+
+    Args:
+        user_id (PydanticObjectId): The ID of the user whose chat history should be cleared.
+    """
+    history = __get_session_history(str(user_id))
+    history.clear()
