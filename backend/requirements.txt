@@ -5,3 +5,7 @@ pydantic-extra-types
 pydantic-settings
 pyjwt
 passlib[bcrypt]
+langchain_community
+langchain_ollama
+langchain-mongodb
+pypdf
