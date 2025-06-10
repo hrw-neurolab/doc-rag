@@ -3,12 +3,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from pymongo.errors import ServerSelectionTimeoutError
-from pymongo.operations import SearchIndexModel
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.middleware.cors import CORSMiddleware
 
 from src.config import CONFIG
+from src.nlp.embeddings import create_search_index
 from src.resources.models import (
     Chunk,
     Resource,
@@ -62,22 +62,7 @@ async def lifespan(app: FastAPI):
     await init_beanie(app.db, document_models=DOCUMENT_MODELS)
     __logger.info("Beanie initialized successfully")
 
-    collection = app.db.get_collection("chunks")
-    search_index_model = SearchIndexModel(
-        definition={
-            "fields": [
-                {
-                    "type": "vector",
-                    "numDimensions": CONFIG.mongo.search_index_dimensions,
-                    "path": CONFIG.mongo.search_index_field,
-                    "similarity": CONFIG.mongo.search_index_similarity,
-                }
-            ]
-        },
-        name=CONFIG.mongo.search_index_name,
-        type="vectorSearch",
-    )
-    await collection.create_search_index(search_index_model)
+    await create_search_index()
     __logger.info("Search index created successfully")
 
     yield

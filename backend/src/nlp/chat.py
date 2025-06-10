@@ -1,9 +1,15 @@
 from beanie import PydanticObjectId
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    HumanMessagePromptTemplate,
+    SystemMessagePromptTemplate,
+)
+from langchain_core.messages import BaseMessage
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import RunnableConfig
+from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel, Field
 
 from src.config import CONFIG
@@ -13,30 +19,37 @@ from src.resources.models import Chunk
 
 __SYSTEM_MESSAGE = """\
 You are a helpful assistant that can answer questions based on the provided resources.
-A list of resources will be provided, each containing a unique resource ID and its content.
-Use these resources to answer the user's questions accurately and concisely and do not make up information that is not present in the resources.
+A list of resources will be provided before every message, each containing a unique resource ID and its content.
 
+You decide whether one of the resources is appropriate to answer the user's questions accurately and concisely.
 IMPORTANT:
-Always cite the resource ID in **square brackets** when providing answers.
+If a sentence or paragraph refers to a resource, cite the resource ID in **square brackets** at the end.
 Example: "The capital of France is Paris [507f1f77bcf86cd799439011]."
+If you use information from multiple resources, cite each resource ID in **separate** square brackets.
+Example: "The capital of France is Paris [507f1f77bcf86cd799439011] [507f1f77bcf86cd799439012]."
 
-Here are the resources:
-{resources}
+If none matches the query, you can try to answer without resources, but then you MUST include a hint that you did not use resources.
+In either case, DO NOT make up information - if you are not sure, refuse the answer and apologize kindly.\
 """
 
-__HUMAN_MESSAGE = "{query}"
+__HUMAN_MESSAGE = """\
+Here are the current resources you may use to answer my question:
+{resources}
+
+{query}\
+"""
 
 
-__PROMPT_TEMPLATE = ChatPromptTemplate.from_messages(
+__PROMPT_TEMPLATE = ChatPromptTemplate(
     [
-        SystemMessage(content=__SYSTEM_MESSAGE),
+        SystemMessagePromptTemplate.from_template(__SYSTEM_MESSAGE),
         MessagesPlaceholder(variable_name="history"),
-        HumanMessage(content=__HUMAN_MESSAGE),
+        HumanMessagePromptTemplate.from_template(__HUMAN_MESSAGE),
     ]
 )
 
 
-__CHAIN = __PROMPT_TEMPLATE | CHAT_CLIENT
+__CHAIN = __PROMPT_TEMPLATE | CHAT_CLIENT | StrOutputParser()
 
 
 class InMemoryHistory(BaseChatMessageHistory, BaseModel):
@@ -88,7 +101,7 @@ async def stream_response(
     config = RunnableConfig(configurable={"session_id": str(user_id)})
 
     async for chunk in __HISTORY_CHAIN.astream(variables, config):
-        yield chunk.content
+        yield chunk
 
 
 def clear_chat(user_id: PydanticObjectId) -> None:

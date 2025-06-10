@@ -74,7 +74,7 @@ async def login(
 
 
 @router.get("/refresh")
-async def refresh_token(token: Annotated[str, Depends(OAUTH2)]) -> Tokens:
+async def refresh_token(token: Annotated[str, Depends(OAUTH2)]) -> TokensWithUser:
     user_id = decode_token(token, CONFIG.jwt.secret_key_refresh, CONFIG.jwt.algorithm)
 
     user = await UserDB.get(user_id)
@@ -88,4 +88,4 @@ async def refresh_token(token: Annotated[str, Depends(OAUTH2)]) -> Tokens:
 
     access_token = create_access_token(str(user.id))
 
-    return Tokens(access_token=access_token, refresh_token=token)
+    return TokensWithUser(access_token=access_token, refresh_token=token, user=user)

@@ -1,12 +1,14 @@
 services:
   doc-rag-db:
-    image: mongo
+    image: mongodb/mongodb-atlas-local:latest
+    hostname: mongodb
     restart: unless-stopped
     container_name: doc-rag-db
     ports:
       - "27017:27017"
     volumes:
       - "mongodb-data:/data/db"
+      - "mongodb-config:/data/configdb"
     networks:
       - doc-rag
 
@@ -16,3 +18,4 @@ networks:
 
 volumes:
   mongodb-data:
+  mongodb-config:

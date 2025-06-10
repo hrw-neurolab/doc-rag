@@ -1,4 +1,7 @@
 from beanie import PydanticObjectId
+from motor.motor_asyncio import AsyncIOMotorCollection
+from pymongo.operations import SearchIndexModel
+from pymongo.errors import OperationFailure
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_mongodb.pipelines import vector_search_stage
@@ -15,6 +18,59 @@ __PDF_SPLITTER = RecursiveCharacterTextSplitter(
     chunk_overlap=CONFIG.embedding_client.chunk_overlap,
     length_function=len,
 )
+
+
+async def create_search_index():
+    """Create a search index for the Chunk collection.
+    This function checks if the search index already exists, and if not, it creates one.
+    If the collection does not exist, it creates a dummy document to initialize the collection first.
+
+    Raises:
+        OperationFailure: If there is an error creating the search index.
+    """
+    collection = Chunk.get_motor_collection()
+    indexes = await collection.list_search_indexes().to_list()
+
+    if len(indexes) > 0 and indexes[-1]["name"] == "embedding_index":
+        return
+
+    search_index_model = SearchIndexModel(
+        definition={
+            "fields": [
+                {
+                    "type": "vector",
+                    "numDimensions": CONFIG.mongo.search_index_dimensions,
+                    "path": CONFIG.mongo.search_index_field,
+                    "similarity": CONFIG.mongo.search_index_similarity,
+                },
+                {
+                    "type": "filter",
+                    "path": "user",
+                },
+                {
+                    "type": "filter",
+                    "path": "resource",
+                },
+            ]
+        },
+        name=CONFIG.mongo.search_index_name,
+        type="vectorSearch",
+    )
+
+    try:
+        await collection.create_search_index(search_index_model)
+        return
+
+    except OperationFailure as e:
+        if e.details.get("codeName") != "NamespaceNotFound":
+            raise e
+
+    # Insert a dummy document to create the collection
+    result = await collection.insert_one({})
+    await collection.delete_one({"_id": result.inserted_id})
+
+    # Retry creating the search index
+    await collection.create_search_index(search_index_model)
 
 
 async def split_pdf(file_path: str) -> tuple[list[Document], int]:
@@ -71,7 +127,7 @@ async def similarity_search(
     """
     query_embedding = await EMBEDDING_CLIENT.aembed_query(query)
 
-    pre_filter = {"user_id": user_id}
+    pre_filter = {"user": user_id}
 
     if resource_ids:
         pre_filter["resource"] = {"$in": resource_ids}
@@ -85,8 +141,9 @@ async def similarity_search(
     )
 
     pipeline = [search_stage]
+    collection = Chunk.get_motor_collection()
 
-    results = await Chunk.aggregate(pipeline).to_list()
+    results = await collection.aggregate(pipeline).to_list()
 
     chunks = []
     for result in results:

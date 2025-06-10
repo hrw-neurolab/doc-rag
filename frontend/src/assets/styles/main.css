@@ -1,0 +1,15 @@
+@import "./base.css";
+@import "primeicons/primeicons.css";
+@import "./scrollbar.css";
+@import "./chat.css";
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-weight: normal;
+}
+
+body > .p-dialog-mask {
+  padding: 0 1rem;
+}

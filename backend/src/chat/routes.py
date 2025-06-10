@@ -1,4 +1,5 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
@@ -40,9 +41,10 @@ async def chat(
             detail="No resources found for the given user or resource IDs.",
         )
 
-    generator = stream_response(body.query, chunks, user.id)
-
-    return StreamingResponse(content=generator, media_type="text/event-stream")
+    return StreamingResponse(
+        content=stream_response(body.query, chunks, user.id),
+        media_type="text/event-stream",
+    )
 
 
 @router.post("/clear", status_code=status.HTTP_204_NO_CONTENT)

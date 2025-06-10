@@ -1,0 +1,6 @@
+.assistant-message {
+  font-weight: normal;
+  ul {
+    margin: 1rem 0;
+  }
+}

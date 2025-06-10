@@ -1,7 +1,8 @@
 from datetime import datetime
 from enum import Enum
+from typing import Annotated
 
-from beanie import Document, PydanticObjectId
+from beanie import Document, Indexed, PydanticObjectId
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
@@ -30,8 +31,8 @@ class WebpageResource(Resource):
 
 
 class Chunk(Document):
-    user: PydanticObjectId
-    resource: PydanticObjectId
+    user: Annotated[PydanticObjectId, Indexed()]
+    resource: Annotated[PydanticObjectId, Indexed()]
     content: str
     embedding: list[float]
     index: int

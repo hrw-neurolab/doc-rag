@@ -31,6 +31,8 @@ async def store_resource_file(
         str(resource_id),
     )
 
+    os.makedirs(os.path.dirname(storage_path), exist_ok=True)
+
     if resource_type == ResourceType.PDF:
         storage_path += ".pdf"
 

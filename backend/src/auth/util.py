@@ -43,15 +43,15 @@ def create_refresh_token(user_id: str):
 def decode_token(token: str, secret_key: str, algorithm: str) -> PydanticObjectId:
     try:
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])
-    except InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication credentials.",
-        )
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Token has expired.",
+        )
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid authentication credentials.",
         )
 
     if "sub" not in payload or "exp" not in payload:
