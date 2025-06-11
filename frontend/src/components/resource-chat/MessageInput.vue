@@ -20,7 +20,8 @@ const handleSubmit = () => {
 
 <template>
   <div class="message-input">
-    <InputGroup>
+    <div class="bg"></div>
+    <InputGroup class="message-input-group">
       <InputText
         :disabled="disabled"
         :style="{ flexGrow: 1 }"
@@ -41,20 +42,35 @@ const handleSubmit = () => {
   align-items: center;
   gap: 1rem;
   width: 100%;
-  max-width: 800px;
   padding: 2rem;
   padding-top: 0;
-  position: relative;
-  margin: 0 auto;
+  position: absolute;
+  bottom: 0;
 }
 
-.message-input::after {
+.message-input-group {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+.bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 1rem;
+  bottom: 0;
+  background: var(--background-color);
+}
+
+.bg::before {
   content: "";
   position: absolute;
-  top: -4rem;
+  top: -2rem;
   left: 0;
-  width: 98%;
-  height: 4rem;
+  right: 1rem;
+  height: 2rem;
   background: linear-gradient(to bottom, transparent, var(--background-color));
 }
 </style>

@@ -70,7 +70,7 @@ services:
               device_ids: ["3"]
               capabilities: [gpu]
     # ports:
-    #   - "11437:11434"
+    #   - "11434:11434"
     volumes:
       - ollama:/root/.ollama
     environment:

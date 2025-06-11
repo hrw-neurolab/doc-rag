@@ -2,19 +2,17 @@
 import AppLogo from "@/components/AppLogo.vue";
 import { useSessionStore } from "@/stores/session-store";
 import { useThemeStore } from "@/stores/theme-store";
-import { storeToRefs } from "pinia";
 import { Divider } from "primevue";
 import { computed } from "vue";
 
 const sessionStore = useSessionStore();
-const themeStore = useThemeStore();
-const { isMobile } = storeToRefs(themeStore);
+const { breakpoints } = useThemeStore();
 
-const logoSize = computed(() => (isMobile.value ? 150 : 200));
+const logoSize = computed(() => (breakpoints.smaller("tablet") ? 150 : 200));
 </script>
 
 <template>
-  <div class="welcome-screen">
+  <div class="welcome-screen" :class="{ mobile: breakpoints.smaller('desktop') }">
     <AppLogo :width="logoSize" :height="logoSize" />
     <h1 style="text-align: center">Welcome back, {{ sessionStore.user?.first_name }}!</h1>
     <Divider />
@@ -35,5 +33,9 @@ const logoSize = computed(() => (isMobile.value ? 150 : 200));
   width: 100%;
   max-width: 30rem;
   flex-grow: 1;
+}
+
+.welcome-screen.mobile {
+  padding: 0 2rem 6rem 2rem;
 }
 </style>

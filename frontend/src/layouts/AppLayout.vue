@@ -44,13 +44,11 @@ onMounted(fetchResources);
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  position: relative;
 }
 
 .desktop-page-container {
   align-items: center;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .mobile-page-container {

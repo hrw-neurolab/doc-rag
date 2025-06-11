@@ -10,8 +10,6 @@ const { messages } = defineProps<{ messages: Message[] }>();
 const container = useTemplateRef("container");
 
 const scrollToBottom = async () => {
-  console.log("Scrolling to bottom");
-
   const el = container.value;
   if (!el) return;
   await nextTick();
@@ -25,51 +23,62 @@ defineExpose({ scrollToBottom });
 </script>
 
 <template>
-  <div ref="container" class="message-list">
-    <div
-      v-for="(m, i) in messages"
-      :key="i"
-      :class="m.role === 'user' ? 'user-message' : 'assistant-message'"
-    >
-      <span v-if="m.role === 'user'">{{ m.content }}</span>
+  <div ref="container" class="message-list-container">
+    <div class="message-list">
+      <div
+        v-for="(m, i) in messages"
+        :key="i"
+        :class="m.role === 'user' ? 'user-message' : 'assistant-message'"
+      >
+        <span v-if="m.role === 'user'">{{ m.content }}</span>
 
-      <div v-else-if="m.content.text === ''" class="loading-response">
-        <ProgressSpinner
-          style="width: 1rem; height: 1rem; margin: 0"
-          strokeWidth="10"
-          animationDuration=".3s"
-        />
-        <span>Reading your Resources...</span>
-      </div>
+        <div v-else-if="m.content.text === ''" class="loading-response">
+          <ProgressSpinner
+            style="width: 1rem; height: 1rem; margin: 0"
+            strokeWidth="10"
+            animationDuration=".3s"
+          />
+          <span>Reading your Resources...</span>
+        </div>
 
-      <template v-else>
-        <VueMarkdown :source="m.content.text" />
-        <template v-if="m.content.citations.length > 0">
-          <Divider />
-          <div class="citations">
-            <h3>Sources:</h3>
-            <AssistantCitation
-              v-for="(id, index) in m.content.citations"
-              :key="id"
-              :chunk-id="id"
-              :citation-number="index + 1"
-            />
-          </div>
+        <template v-else>
+          <VueMarkdown :source="m.content.text" />
+          <template v-if="m.content.citations.length > 0">
+            <Divider />
+            <div class="citations">
+              <h3>Sources:</h3>
+              <AssistantCitation
+                v-for="(id, index) in m.content.citations"
+                :key="id"
+                :chunk-id="id"
+                :citation-number="index + 1"
+              />
+            </div>
+          </template>
         </template>
-      </template>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.message-list-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
 .message-list {
   display: flex;
   flex-direction: column;
   width: 100%;
-  flex-grow: 1;
   gap: 1rem;
-  overflow-y: auto;
-  padding: 2rem 2rem 4rem 2rem;
+  padding: 2rem 2rem 6rem 2rem;
+  max-width: 1000px;
 }
 
 .user-message {
