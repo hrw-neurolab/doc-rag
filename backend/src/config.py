@@ -55,6 +55,8 @@ class ChatClientSettings(BaseModel):
 
 class Settings(BaseSettings):
 
+    allow_origins: list[str] = ["*"]
+
     # Mongo Engine settings
     mongo: MongoSettings = MongoSettings()
 

@@ -34,14 +34,9 @@ services:
       context: ./frontend
       dockerfile: ./Dockerfile
     container_name: doc-rag-frontend
-    command: /bin/true
-    # ports:
-    #   - "5173:5173"
-    restart: unless-stopped
     volumes:
-      - doc-rag-dist:/usr/src/app/dist
-    depends_on:
-      - doc-rag-backend
+      - dist:/shared
+    restart: no
     networks:
       - doc-rag
 
@@ -52,7 +47,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - doc-rag-dist:/usr/share/nginx/html:ro
+      - dist:/usr/share/nginx/html:ro
     depends_on:
       - doc-rag-frontend
       - doc-rag-backend
@@ -87,6 +82,6 @@ volumes:
   mongodb-data:
   mongodb-config:
   file-storage:
-  doc-rag-dist:
+  dist:
   ollama:
     external: true
