@@ -55,10 +55,6 @@ class ChatClientSettings(BaseModel):
 
 class Settings(BaseSettings):
 
-    # General settings
-    frontend_url: str = "http://localhost:5173"
-    version: str = "0.1.0"
-
     # Mongo Engine settings
     mongo: MongoSettings = MongoSettings()
 

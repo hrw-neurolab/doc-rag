@@ -4,11 +4,78 @@ services:
     hostname: mongodb
     restart: unless-stopped
     container_name: doc-rag-db
-    ports:
-      - "27017:27017"
+    # ports:
+    #   - "27017:27017"
     volumes:
       - "mongodb-data:/data/db"
       - "mongodb-config:/data/configdb"
+    networks:
+      - doc-rag
+
+  doc-rag-backend:
+    image: doc-rag-backend
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile
+    container_name: doc-rag-backend
+    # ports:
+    #   - "8000:8000"
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.docker
+    volumes:
+      - file-storage:/fastapi/storage
+    networks:
+      - doc-rag
+
+  doc-rag-frontend:
+    image: doc-rag-frontend
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    container_name: doc-rag-frontend
+    command: /bin/true
+    # ports:
+    #   - "5173:5173"
+    restart: unless-stopped
+    volumes:
+      - doc-rag-dist:/usr/src/app/dist
+    depends_on:
+      - doc-rag-backend
+    networks:
+      - doc-rag
+
+  doc-rag-nginx:
+    image: nginx:latest
+    container_name: doc-rag-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - doc-rag-dist:/usr/share/nginx/html:ro
+    depends_on:
+      - doc-rag-frontend
+      - doc-rag-backend
+    networks:
+      - doc-rag
+
+  doc-rag-ollama:
+    image: ollama/ollama
+    container_name: doc-rag-ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["3"]
+              capabilities: [gpu]
+    # ports:
+    #   - "11437:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_NOHISTORY=1
+    restart: unless-stopped
     networks:
       - doc-rag
 
@@ -19,3 +86,7 @@ networks:
 volumes:
   mongodb-data:
   mongodb-config:
+  file-storage:
+  doc-rag-dist:
+  ollama:
+    external: true
