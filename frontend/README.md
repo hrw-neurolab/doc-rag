@@ -1,5 +1,28 @@
-# Vue 3 + TypeScript + Vite
+# 🎨 Frontend
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+The web interface of doc-rag built with Vue 3 and TypeScript. ✨
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## 🧰 Tech stack
+
+- **Vite** + **Vue&nbsp;3**
+- **Pinia** and **PrimeVue** for UI components
+- **Bun** as the package runner
+
+## 🏗️ Local installation
+
+1. Install [bun](https://bun.sh) (or Node 18+).
+2. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+3. Install dependencies and start the dev server:
+   ```bash
+   bun install
+   bun run dev
+   ```
+4. Build the production bundle:
+   ```bash
+   bun run build
+   ```
+
+The Docker setup builds the frontend automatically—see the root README for details.
