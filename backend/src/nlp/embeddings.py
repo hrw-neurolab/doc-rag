@@ -7,6 +7,7 @@ from langchain_core.documents import Document
 from langchain_mongodb.pipelines import vector_search_stage
 from fastapi import HTTPException, status
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from typing import Union, List, Optional
 
 from src.config import CONFIG
 from src.nlp.clients import EMBEDDING_CLIENT
@@ -20,7 +21,7 @@ __PDF_SPLITTER = RecursiveCharacterTextSplitter(
 )
 
 
-async def create_search_index():
+async def create_search_index(db):
     """Create a search index for the Chunk collection.
     This function checks if the search index already exists, and if not, it creates one.
     If the collection does not exist, it creates a dummy document to initialize the collection first.
@@ -28,7 +29,8 @@ async def create_search_index():
     Raises:
         OperationFailure: If there is an error creating the search index.
     """
-    collection = Chunk.get_motor_collection()
+    # collection = Chunk.get_motor_collection()
+    collection = db[Chunk.Settings.name]
     indexes = await collection.list_search_indexes().to_list()
 
     if len(indexes) > 0 and indexes[-1]["name"] == "embedding_index":
@@ -113,8 +115,10 @@ async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
 async def similarity_search(
     query: str,
     user_id: PydanticObjectId,
-    resource_ids: list[PydanticObjectId] | None,
-) -> list[PDFChunk | Chunk]:
+    # resource_ids: list[PydanticObjectId] | None,
+    resource_ids: Optional[List[PydanticObjectId]]
+# ) -> list[PDFChunk | Chunk]:
+) -> list[Union[PDFChunk, Chunk]]:
     """Perform a similarity search for the given query.
 
     Args:
@@ -141,7 +145,8 @@ async def similarity_search(
     )
 
     pipeline = [search_stage]
-    collection = Chunk.get_motor_collection()
+    # collection = Chunk.get_motor_collection()
+    collection = Chunk.get_pymongo_collection()
 
     results = await collection.aggregate(pipeline).to_list()
 

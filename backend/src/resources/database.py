@@ -1,6 +1,7 @@
 from beanie import PydanticObjectId
 from beanie.operators import RegEx
 from fastapi import HTTPException, UploadFile, status
+from typing import Optional, List
 
 from src.resources.storage import store_resource_file
 from src.nlp.embeddings import split_pdf, embed_chunks
@@ -55,7 +56,8 @@ async def create_pdf_resource(file: UploadFile, user_id: PydanticObjectId):
     return pdf_resource
 
 
-async def get_resources(user_id: PydanticObjectId, query: str | None) -> list[Resource]:
+# async def get_resources(user_id: PydanticObjectId, query: str | None) -> list[Resource]:
+async def get_resources(user_id: PydanticObjectId, query: Optional[str]) -> List[Resource]:
     """Get all resources for the current user.
 
     Args:

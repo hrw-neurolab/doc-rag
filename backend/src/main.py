@@ -23,6 +23,8 @@ from src.auth.routes import router as AuthRouter
 from src.resources.routes import router as ResourcesRouter
 from src.chat.routes import router as ChatRouter
 
+from src.resources.models import Chunk
+
 
 logging.basicConfig(level=logging.INFO)
 __logger = logging.getLogger(__name__)
@@ -61,8 +63,9 @@ async def lifespan(app: FastAPI):
 
     await init_beanie(app.db, document_models=DOCUMENT_MODELS)
     __logger.info("Beanie initialized successfully")
-
-    await create_search_index()
+    
+    # await create_search_index()
+    await create_search_index(app.db)
     __logger.info("Search index created successfully")
 
     yield

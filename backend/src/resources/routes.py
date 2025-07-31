@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Union
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
@@ -61,7 +61,8 @@ async def get_resources(
 async def get_resource_by_id(
     resource_id: PydanticObjectId,
     user: Annotated[UserDB, Depends(current_user)],
-) -> PDFResource | WebpageResource:
+# ) -> PDFResource | WebpageResource:
+) -> list[Union[PDFResource, WebpageResource]]:
     """Get a specific resource by its ID.
 
     Args:
@@ -78,7 +79,8 @@ async def get_resource_by_id(
 async def get_chunk_by_id(
     chunk_id: PydanticObjectId,
     user: Annotated[UserDB, Depends(current_user)],
-) -> PDFChunk | WebpageChunk:
+# ) -> PDFChunk | WebpageChunk:
+) -> list[Union[PDFChunk, WebpageChunk]]:
     """Get a specific chunk by its ID.
 
     Args:
