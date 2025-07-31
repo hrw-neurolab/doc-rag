@@ -64,8 +64,7 @@ async def lifespan(app: FastAPI):
     await init_beanie(app.db, document_models=DOCUMENT_MODELS)
     __logger.info("Beanie initialized successfully")
     
-    # await create_search_index()
-    await create_search_index(app.db)
+    await create_search_index()
     __logger.info("Search index created successfully")
 
     yield

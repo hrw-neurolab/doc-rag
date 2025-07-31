@@ -21,7 +21,7 @@ __PDF_SPLITTER = RecursiveCharacterTextSplitter(
 )
 
 
-async def create_search_index(db):
+async def create_search_index():
     """Create a search index for the Chunk collection.
     This function checks if the search index already exists, and if not, it creates one.
     If the collection does not exist, it creates a dummy document to initialize the collection first.
@@ -30,7 +30,7 @@ async def create_search_index(db):
         OperationFailure: If there is an error creating the search index.
     """
     # collection = Chunk.get_motor_collection()
-    collection = db[Chunk.Settings.name]
+    collection = Chunk.get_pymongo_collection()
     indexes = await collection.list_search_indexes().to_list()
 
     if len(indexes) > 0 and indexes[-1]["name"] == "embedding_index":
