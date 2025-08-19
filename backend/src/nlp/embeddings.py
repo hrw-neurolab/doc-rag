@@ -6,19 +6,55 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_mongodb.pipelines import vector_search_stage
 from fastapi import HTTPException, status
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, TokenTextSplitter # TextSplitter
+# from nltk.tokenize import sent_tokenize
 from typing import Union, List, Optional
 
+# import nltk
 from src.config import CONFIG
 from src.nlp.clients import EMBEDDING_CLIENT
+from src.nlp.mmr import MMRSelector
 from src.resources.models import Chunk, PDFChunk
 
-
-__PDF_SPLITTER = RecursiveCharacterTextSplitter(
+# __PDF_SPLITTER = RecursiveCharacterTextSplitter(
+#     chunk_size=CONFIG.embedding_client.chunk_size,
+#     chunk_overlap=CONFIG.embedding_client.chunk_overlap,
+#     length_function=len,
+# )
+__PDF_SPLITTER = TokenTextSplitter(
     chunk_size=CONFIG.embedding_client.chunk_size,
     chunk_overlap=CONFIG.embedding_client.chunk_overlap,
-    length_function=len,
+    encoding_name="cl100k_base",
 )
+
+__MMR_SELECTOR = MMRSelector(
+    final_k=CONFIG.embedding_client.mmr_final_k,
+    lambda_param=CONFIG.embedding_client.mmr_lambda_param,
+    similarity_threshold=CONFIG.embedding_client.mmr_similarity_threashold
+)
+
+# nltk.download('punkt')
+# nltk.download('punkt_tab')
+
+
+# class SentenceTextSplitter(TextSplitter):
+#     def __init__(self, sentences_per_chunk=10, overlap=2):
+#         super().__init__()
+#         self.sentences_per_chunk = sentences_per_chunk
+#         self.overlap = overlap
+
+#     def split_text(self, text: str) -> list[str]:
+#         sentences = nltk.tokenize.sent_tokenize(text)
+#         chunks = []
+#         step = max(1, self.sentences_per_chunk - self.overlap)
+
+#         for i in range(0, len(sentences), step):
+#             chunk = " ".join(sentences[i:i + self.sentences_per_chunk])
+#             chunks.append(chunk.strip())
+
+#         return chunks
+
+# __PDF_SPLITTER = SentenceTextSplitter(sentences_per_chunk=12, overlap=2)
 
 
 async def create_search_index():
@@ -150,8 +186,49 @@ async def similarity_search(
 
     results = await collection.aggregate(pipeline).to_list()
 
-    chunks = []
-    for result in results:
+    # chunks = []
+    # for result in results:
+    #     if "page_number" in result:
+    #         chunks.append(PDFChunk(**result))
+    #     else:
+    #         chunks.append(Chunk(**result))
+
+    # return chunks
+
+    results = await collection.aggregate(pipeline).to_list()
+
+    # Build vectors and apply threshold
+    indexed = [
+        (idx, r)
+        for idx, r in enumerate(results)
+        if isinstance(r.get("embedding"), list)
+    ]
+    if not indexed:
+        return []
+
+    doc_vecs = [r["embedding"] for _, r in indexed]
+    relevances = [__MMR_SELECTOR._cosine(query_embedding, v) for v in doc_vecs]
+
+    # Filter by similarity threshold
+    filtered = [
+        (i, r, s)
+        for (i, r), s in zip(indexed, relevances)
+        if s >= CONFIG.embedding_client.mmr_similarity_threashold
+    ]
+    if not filtered:
+        return []
+
+    filtered_doc_vecs = [r["embedding"] for _, r, _ in filtered]
+    selected_rel_indices = __MMR_SELECTOR.select(
+        query_embedding,
+        filtered_doc_vecs,
+    )
+
+    # Map back to original results order
+    selected = [filtered[i] for i in selected_rel_indices]
+
+    chunks: list[Union[PDFChunk, Chunk]] = []
+    for _, result, _ in selected:
         if "page_number" in result:
             chunks.append(PDFChunk(**result))
         else:
