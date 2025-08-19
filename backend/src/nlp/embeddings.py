@@ -14,6 +14,7 @@ from typing import Union, List, Optional
 from src.config import CONFIG
 from src.nlp.clients import EMBEDDING_CLIENT
 from src.nlp.mmr import MMRSelector
+from src.nlp.textcleaner import TextCleaner
 from src.resources.models import Chunk, PDFChunk
 
 # __PDF_SPLITTER = RecursiveCharacterTextSplitter(
@@ -32,6 +33,8 @@ __MMR_SELECTOR = MMRSelector(
     lambda_param=CONFIG.embedding_client.mmr_lambda_param,
     similarity_threshold=CONFIG.embedding_client.mmr_similarity_threashold
 )
+
+__TEXT_CLEANER = TextCleaner(take=2, min_ratio=0.6)
 
 # nltk.download('punkt')
 # nltk.download('punkt_tab')
@@ -122,6 +125,15 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
     """
     loader = PyPDFLoader(file_path)
     pages = await loader.aload()
+
+
+    # Clean page contents and ensure page metadata
+    raw_page_texts = [p.page_content for p in pages]
+    cleaned_texts = __TEXT_CLEANER.clean_pages(raw_page_texts)
+    for i, p in enumerate(pages):
+        p.page_content = cleaned_texts[i]
+        # ensure 1-based page number is present
+        p.metadata["page"] = p.metadata.get("page", i + 1)
 
     if not pages:
         raise HTTPException(
