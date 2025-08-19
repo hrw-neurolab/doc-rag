@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from src.config import CONFIG
 from src.nlp.clients import CHAT_CLIENT
-from src.resources.models import Chunk
+from src.resources.models import Chunk, Resource
 
 
 __SYSTEM_MESSAGE = """\
@@ -92,10 +92,22 @@ async def stream_response(
     Yields:
         str: Streaming response from the chat model.
     """
+    # Build title lookup for chunks' resources
+    resource_ids = {c.resource for c in resources}
+    resource_docs = await Resource.find({"_id": {"$in": list(resource_ids)}}).to_list()
+    id_to_title = {str(r.id): r.title for r in resource_docs}
+
+    def _title_for(resource_id) -> str:
+        return id_to_title.get(str(resource_id), "Untitled")
+
     resources_str = "\n".join(
-        f"- Resource ID: {str(resource.id)}, Content: {resource.content}"
-        for resource in resources
+        f"- ID: {str(r.id)}, Title: {_title_for(r.resource)}, Page: {getattr(r, 'page_number', '?')}, Excerpt: {r.content}"
+        for r in resources
     )
+    # resources_str = "\n".join(
+    #     f"- Resource ID: {str(resource.id)}, Content: {resource.content}"
+    #     for resource in resources
+    # )
 
     variables = dict(query=query, resources=resources_str)
     config = RunnableConfig(configurable={"session_id": str(user_id)})

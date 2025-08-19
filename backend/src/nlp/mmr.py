@@ -4,9 +4,9 @@ from typing import List
 
 class MMRSelector:
     def __init__(self,
-                 final_k: int = 8,
-                 lambda_param: float = 0.5,
-                 similarity_threshold: float = 0.3):
+                 final_k: int,
+                 lambda_param: float,
+                 similarity_threshold: float):
         """
         Configure post-retrieval filtering and diversification.
 
