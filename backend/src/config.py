@@ -9,11 +9,11 @@ class MongoSettings(BaseModel):
 
     uri: str = "mongodb://localhost:27017"
     db_name: str = "doc-rag"
-    search_index_dimensions: int = 1536
+    search_index_dimensions: int = 768
     search_index_similarity: str = "cosine"
     search_index_field: str = "embedding"
     search_index_name: str = "embedding_index"
-    search_top_k: int = 5
+    search_top_k: int = 20
 
 
 class JWTSettings(BaseModel):
@@ -40,8 +40,13 @@ class EmbeddingClientSettings(BaseModel):
     base_url: str = "http://localhost:11434"
     num_ctx: int = 5000
     temperature: float = 0.0
-    chunk_size: int = 1000
-    chunk_overlap: int = 300
+    chunk_size: int = 500
+    chunk_overlap: int = 100
+    mmr_final_k: int = 5
+    mmr_lambda_param: float = 0.5
+    mmr_similarity_threashold: float = 0.3
+    textcleaner_take: int = 2
+    textcleaner_ratio: float = 0.7
 
 
 class ChatClientSettings(BaseModel):
@@ -61,7 +66,7 @@ class Settings(BaseSettings):
     mongo: MongoSettings = MongoSettings()
 
     # JWT settings
-    jwt: JWTSettings
+    jwt: JWTSettings = JWTSettings()
 
     # Storage settings
     storage: StorageSettings = StorageSettings()
