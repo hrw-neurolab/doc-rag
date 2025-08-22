@@ -1,4 +1,5 @@
 import re
+from wordfreq import zipf_frequency
 from collections import Counter
 from typing import List, Set
 
@@ -18,6 +19,37 @@ class TextCleaner:
         self.take = take
         self.min_ratio = min_ratio
 
+
+    @staticmethod
+    def _is_word(word: str, langs: List[str] = ["en", "de"], threshold: float = 2.5) -> bool:
+        """
+        Return True if 'word' is common enough in at least one language.
+        """
+        return any(zipf_frequency(word, lang) >= threshold for lang in langs)
+
+    def _fix_intraword_spaces(self, text: str, langs: List[str] = ["en", "de"]) -> str:
+        """
+        Replace spurious spaces inside words using dictionary check.
+        Example: "cur rent" -> "current", but "new york" stays.
+        Works with multiple languages.
+        """
+        tokens = text.split()
+        fixed_tokens: List[str] = []
+        i = 0
+
+        while i < len(tokens):
+            if i < len(tokens) - 1:
+                merged = tokens[i] + tokens[i + 1]
+                if self._is_word(merged, langs=langs):  # ✅ check all languages
+                    fixed_tokens.append(merged)
+                    i += 2
+                    continue
+            fixed_tokens.append(tokens[i])
+            i += 1
+
+        return " ".join(fixed_tokens)
+
+
     def _fix_hyphenation(self, text: str) -> str:
         """Join hyphenated line breaks, normalize whitespace and newlines."""
         text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", text)
@@ -25,6 +57,7 @@ class TextCleaner:
         text = re.sub(r"\n{3,}", "\n\n", text)         # collapse 3+ newlines
         text = re.sub(r"[ \t]+", " ", text)            # normalize spaces/tabs
         return text.strip()
+
 
     def _detect_running_lines(self, pages: List[str], position: str) -> Set[str]:
         """Detect repeated headers or footers across pages."""
@@ -44,6 +77,7 @@ class TextCleaner:
         }
         return running
 
+
     def _strip_running(self, text: str, headers: Set[str], footers: Set[str]) -> str:
         """Remove detected headers and footers from a page."""
         lines = [ln.strip() for ln in text.splitlines()]
@@ -53,6 +87,30 @@ class TextCleaner:
             lines = lines[:-1]
         return "\n".join(lines).strip()
 
+
+    def _normalize_spacing(self, text: str, langs: List[str] = ["en", "de"]) -> str:
+        """
+        Normalize spacing and punctuation. 
+        Uses dictionary-driven intraword space fix for multiple languages.
+        """
+        re_multi_spaces = re.compile(r'[ \t]{2,}')
+        re_space_before_punct = re.compile(r'\s+([,.;:!?%)\]\}])')
+        re_space_after_open = re.compile(r'([(\[\{])\s+')
+        re_parens_number = re.compile(r'\(\s*(\d+)\s*\)')
+
+        # Intraword spaces using dictionary across languages
+        text = self._fix_intraword_spaces(text, langs=langs)
+
+        # Punctuation/spacing normalization
+        text = re_space_before_punct.sub(r'\1', text)
+        text = re_space_after_open.sub(r'\1', text)
+        text = re_parens_number.sub(r'(\1)', text)
+
+        # Collapse multiple spaces inside paragraphs, preserve paragraph breaks
+        paragraphs = [re_multi_spaces.sub(' ', p) for p in text.split('\n\n')]
+        return '\n\n'.join(p.strip() for p in paragraphs)
+
+
     def clean_pages(self, pages: List[str]) -> List[str]:
         """Clean a list of page texts."""
         headers = self._detect_running_lines(pages, "head")
@@ -61,5 +119,6 @@ class TextCleaner:
         for text in pages:
             txt = self._strip_running(text, headers, footers)
             txt = self._fix_hyphenation(txt)
+            txt = self._normalize_spacing(txt)
             cleaned.append(txt)
         return cleaned
