@@ -34,7 +34,10 @@ __MMR_SELECTOR = MMRSelector(
     similarity_threshold=CONFIG.embedding_client.mmr_similarity_threashold
 )
 
-__TEXT_CLEANER = TextCleaner(take=2, min_ratio=0.6)
+__TEXT_CLEANER = TextCleaner(
+    take=CONFIG.embedding_client.textcleaner_take,
+    min_ratio=CONFIG.embedding_client.textcleaner_ratio
+)
 
 # nltk.download('punkt')
 # nltk.download('punkt_tab')
