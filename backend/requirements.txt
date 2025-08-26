@@ -12,3 +12,4 @@ pypdf
 motor
 nltk
 tiktoken
+wordfreq
