@@ -14,8 +14,7 @@ from src.nlp.clients import CLASSIFIER_CLIENT
 
 system_message = """\
 You are a helpful assistant that decides whether a query is knowledge-intensive and requires looking up resources.
-Except for very simple chit-chats, all questions should fell into the category "requires resources" by default, and thereby a True as output.
-
+Except for simple chit-chats, most questions should fell into the category "requires resources" by default, and thereby a True as output.
 Return a clean boolean value True or False. Do NOT append any additional elaboration or explanation.\
 """
 
@@ -55,18 +54,32 @@ CLASSIFIER_PROMPT_TEMPLATE = ChatPromptTemplate(
 chain = CLASSIFIER_PROMPT_TEMPLATE | CLASSIFIER_CLIENT | StrOutputParser()
 
 
-_RULE_CHITCHAT = re.compile(
-    r"\b(thanks|thank you|hi|hello|hey|bye|goodbye|sorry|how are you|who are you)\b",
-    re.IGNORECASE,
-)
+# _RULE_CHITCHAT = re.compile(
+#     r"\b(thanks|thank you|hi|hello|hey|bye|goodbye|sorry|how are you|who are you)\b",
+#     re.IGNORECASE,
+# )
 
-def _rule_route(query: str) -> bool:
-    # Return False = no retrieval for obvious chit-chat/meta
-    if _RULE_CHITCHAT.search(query or ""):
-        return False
-    return None  # undecided
+# def _rule_route(query: str) -> bool:
+#     # Return False = no retrieval for obvious chit-chat/meta
+#     if _RULE_CHITCHAT.search(query or ""):
+#         return False
+#     return None  # undecided
 
-async def _llm_route(query: str, timeout_s: float = 3.0) -> bool:
+# async def _llm_route(query: str, timeout_s: float = 3.0) -> bool:
+#     prompt_vars = {"query": query}
+#     try:
+#         resp = await asyncio.wait_for(chain.ainvoke(prompt_vars), timeout=timeout_s)
+#     except asyncio.TimeoutError:
+#         return True  # safe fallback: retrieve
+#     out = (resp or "").strip().split()[0].lower()
+#     print(f"------====== {out} ======------")
+#     return out == "true"
+
+async def lang_check(query: str = "") -> str:
+    language = "de" if detect(query) == "de" else "en"
+    return language
+
+async def retrieve_check(query: str = "", timeout_s: float = 3.0) -> bool:
     prompt_vars = {"query": query}
     try:
         resp = await asyncio.wait_for(chain.ainvoke(prompt_vars), timeout=timeout_s)
@@ -75,15 +88,3 @@ async def _llm_route(query: str, timeout_s: float = 3.0) -> bool:
     out = (resp or "").strip().split()[0].lower()
     print(f"------====== {out} ======------")
     return out == "true"
-
-async def lang_check(query: str = "") -> str:
-    language = "de" if detect(query) == "de" else "en"
-    return language
-
-async def retrieve_check(query: str = "") -> bool:
-    # 1) cheap rules
-    rule = _rule_route(query)
-    if rule is not None:
-        return rule
-    # 2) LLM fallback
-    return await _llm_route(query)
