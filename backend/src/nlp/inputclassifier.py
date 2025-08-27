@@ -72,6 +72,7 @@ async def _llm_route(query: str, timeout_s: float = 3.0) -> bool:
     except asyncio.TimeoutError:
         return True  # safe fallback: retrieve
     out = (resp or "").strip().split()[0].lower()
+    print(f"------====== {out} ======------")
     return out == "true"
 
 async def lang_check(query: str = "") -> str:
