@@ -13,3 +13,4 @@ motor
 nltk
 tiktoken
 wordfreq
+langdetect
