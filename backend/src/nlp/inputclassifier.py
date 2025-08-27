@@ -14,6 +14,7 @@ from src.nlp.clients import CLASSIFIER_CLIENT
 
 system_message = """\
 You are a helpful assistant that decides whether a query is knowledge-intensive and requires looking up resources.
+Except for very simple chit-chats, all questions should fell into the category "requires resources" by default, and thereby a True as output.
 
 Return a clean boolean value True or False. Do NOT append any additional elaboration or explanation.\
 """
