@@ -9,6 +9,8 @@ from langchain_core.prompts import (
 )
 from langchain_core.output_parsers import StrOutputParser
 
+from src.nlp.clients import CLASSIFIER_CLIENT
+
 
 system_message = """\
 You are a helpful assistant that decides whether a query is knowledge-intensive and requires looking up resources.
@@ -30,13 +32,24 @@ CLASSIFIER_PROMPT_TEMPLATE = ChatPromptTemplate(
     ]
 )
 
-CLASSIFIER_CLIENT = ChatOllama(
-        model="llama3.2",
-        base_url="http://localhost:11435",
-        num_ctx=2048,
-        temperature=0.1,
-    )
+# CLASSIFIER_CLIENT = ChatOllama(
+#         model="llama3.2",
+#         base_url="http://localhost:11434",
+#         num_ctx=2048,
+#         temperature=0.1,
+#     )
 
+# if CONFIG.chat_client.model_provider == ModelProvider.OLLAMA:
+#     CHAT_CLIENT = ChatOllama(
+#         model=CONFIG.chat_client.model_name,
+#         base_url=CONFIG.chat_client.base_url,
+#         num_ctx=CONFIG.chat_client.num_ctx,
+#         temperature=CONFIG.chat_client.temperature,
+#     )
+# else:
+#     raise ValueError(
+#         f"Unsupported chat model provider: {CONFIG.chat_client.model_provider}"
+#     )
 
 chain = CLASSIFIER_PROMPT_TEMPLATE | CLASSIFIER_CLIENT | StrOutputParser()
 
