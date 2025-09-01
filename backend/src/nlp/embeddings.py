@@ -242,11 +242,27 @@ async def similarity_search(
     # Map back to original results order
     selected = [filtered[i] for i in selected_rel_indices]
 
-    chunks: list[Union[PDFChunk, Chunk]] = []
-    for _, result, _ in selected:
-        if "page_number" in result:
-            chunks.append(PDFChunk(**result))
-        else:
-            chunks.append(Chunk(**result))
+    # chunks: list[Union[PDFChunk, Chunk]] = []
+    # for _, result, _ in selected:
+    #     if "page_number" in result:
+    #         chunks.append(PDFChunk(**result))
+    #     else:
+    #         chunks.append(Chunk(**result))
+
+    chunks = []
+    for result in results:
+        # Convert MongoDB's _id to id if needed
+        if '_id' in result and 'id' not in result:
+            result['id'] = result.pop('_id')
+        
+        try:
+            if "page_number" in result:
+                chunks.append(PDFChunk(**result))
+            else:
+                chunks.append(Chunk(**result))
+        except Exception as e:
+            print(f"Error creating chunk: {e}")
+            continue
+
 
     return chunks
