@@ -21,7 +21,7 @@ class TextCleaner:
 
 
     @staticmethod
-    def _is_word(word: str, langs: List[str] = ["en", "de"], threshold: float = 2.5) -> bool:
+    def _is_word(word: str, langs: List[str] = ["en", "de"], threshold: float = 2.2) -> bool:
         """
         Return True if 'word' is common enough in at least one language.
         """
