@@ -159,7 +159,11 @@ async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
     Returns:
         list[list[float]]: List of embedding vectors for each chunk.
     """
-    contents = [chunk.page_content for chunk in raw_chunks]
+    contents = [
+        # chunk.page_content
+        f"title: {chunk.metadata.get('title', 'none')} | text: {chunk.page_content}"
+        for chunk in raw_chunks
+    ]
     return await EMBEDDING_CLIENT.aembed_documents(contents)
 
 
@@ -180,7 +184,8 @@ async def similarity_search(
     Returns:
         list[Chunk]: List of chunks that match the query.
     """
-    query_embedding = await EMBEDDING_CLIENT.aembed_query(query)
+    formatted_query = f"task: search result | query:{query}"
+    query_embedding = await EMBEDDING_CLIENT.aembed_query(formatted_query)
 
     pre_filter = {"user": user_id}
 
@@ -210,7 +215,7 @@ async def similarity_search(
 
     # return chunks
 
-    results = await collection.aggregate(pipeline).to_list()
+    # results = await collection.aggregate(pipeline).to_list()
 
     # Build vectors and apply threshold
     indexed = [
@@ -240,7 +245,7 @@ async def similarity_search(
     )
 
     # Map back to original results order
-    selected = [filtered[i] for i in selected_rel_indices]
+    # selected = [filtered[i] for i in selected_rel_indices]
 
     # chunks: list[Union[PDFChunk, Chunk]] = []
     # for _, result, _ in selected:
