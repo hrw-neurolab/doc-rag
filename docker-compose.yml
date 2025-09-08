@@ -4,8 +4,8 @@ services:
     hostname: mongodb
     restart: unless-stopped
     container_name: doc-rag-db
-    # ports:
-    #   - "27017:27017"
+    ports:
+      - "27017:27017"
     volumes:
       - "mongodb-data:/data/db"
       - "mongodb-config:/data/configdb"
@@ -18,8 +18,8 @@ services:
       context: ./backend
       dockerfile: ./Dockerfile
     container_name: doc-rag-backend
-    # ports:
-    #   - "8000:8000"
+    ports:
+      - "8000:8000"
     restart: unless-stopped
     env_file:
       - ./backend/.env.docker
@@ -55,7 +55,7 @@ services:
       - doc-rag
 
   doc-rag-ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
     container_name: doc-rag-ollama
     deploy:
       resources:
@@ -64,8 +64,8 @@ services:
             - driver: nvidia
               device_ids: ["3"]
               capabilities: [gpu]
-    # ports:
-    #   - "11434:11434"
+    ports:
+      - "11434:11434"
     volumes:
       - ollama:/root/.ollama
     environment:
