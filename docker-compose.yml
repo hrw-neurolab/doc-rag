@@ -57,13 +57,13 @@ services:
   doc-rag-ollama:
     image: ollama/ollama:0.11.10
     container_name: doc-rag-ollama
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           device_ids: ["3"]
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["3"]
+              capabilities: [gpu]
     ports:
       - "11434:11434"
       # - "11435:11434"
