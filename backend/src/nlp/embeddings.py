@@ -278,7 +278,7 @@ async def similarity_search(
     resource_ids: Optional[List[PydanticObjectId]]
 ) -> list[Union[PDFChunk, Chunk]]:
     """Perform a similarity search for the given query."""
-    formatted_query = f"task: search result | query:{query}"
+    formatted_query = f"task: search result | query: {query}"
     query_embedding = await EMBEDDING_CLIENT.aembed_query(formatted_query)
 
     pre_filter = {"user": user_id}
@@ -295,10 +295,8 @@ async def similarity_search(
 
     pipeline = [search_stage]
 
-    # Use Motor for async access
-    collection = Chunk.get_motor_collection()
-    # Bound the result size; use top_k to limit returned docs
-    results = await collection.aggregate(pipeline).to_list(CONFIG.mongo.search_top_k)
+    collection = Chunk.get_pymongo_collection()
+    results = await collection.aggregate(pipeline).to_list()
 
     # Prepare vectors for MMR
     indexed = [
