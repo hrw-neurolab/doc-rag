@@ -41,18 +41,24 @@ model_dir = "backend/src/nlp"
 model_name = CONFIG.input_classifier.model_name.split("/")[-1]
 model_path = Path(f"{model_dir}/{model_name}").resolve()
 
-model = AutoModelForSequenceClassification.from_pretrained(
-    str(model_path),
-    local_files_only=True,
-    trust_remote_code=False
-)
-tokenizer = AutoTokenizer.from_pretrained(
-    str(model_path),
-    local_files_only=True,
-    trust_remote_code=False
-)
+# model = AutoModelForSequenceClassification.from_pretrained(
+#     str(model_path),
+#     local_files_only=True,
+#     trust_remote_code=False
+# )
+# tokenizer = AutoTokenizer.from_pretrained(
+#     str(model_path),
+#     local_files_only=True,
+#     trust_remote_code=False
+# )
 
-clf = pipeline("text-classification", model=model, tokenizer=tokenizer)
+# clf = pipeline("text-classification", model=model, tokenizer=tokenizer)
+clf = pipeline(
+    "text-classification",
+    model=f".{model_path}",
+    tokenizer=f".{model_path}",
+    local_files_only=True
+)
 
 # model = AutoModelForSequenceClassification.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
 # tokenizer = AutoTokenizer.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
