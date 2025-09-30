@@ -49,7 +49,7 @@ from src.config import CONFIG
 # model_path = Path(model_dir) / model_name
 
 
-model_dir = Path("backend/src/nlp") / CONFIG.input_classifier.model_name.split("/")[-1]
+model_dir = CONFIG.input_classifier.model_name.split("/")[-1]
 
 # Load manually
 tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
