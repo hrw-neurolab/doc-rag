@@ -1,5 +1,6 @@
 import os
 import asyncio
+from pathlib import Path
 from langdetect import detect
 # from langchain_ollama import ChatOllama
 # from langchain_core.prompts import (
@@ -38,14 +39,14 @@ from src.config import CONFIG
 
 model_dir = "backend/src/nlp"
 model_name = CONFIG.input_classifier.model_name.split("/")[-1]
-model_abs_path = os.path.abspath(f"{model_dir}/{model_name}")
+model_path = Path(f"{model_dir}/{model_name}").resolve()
 
 # model = AutoModelForSequenceClassification.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
 # tokenizer = AutoTokenizer.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
 
 # classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
 
-pipeline = pipeline(task="text-classification", model=model_abs_path, tokenizer=model_abs_path)
+pipeline = pipeline(task="text-classification",model=model_path, tokenizer=model_path, local_files_only=True)
 
 
 async def lang_check(query: str = "") -> str:
