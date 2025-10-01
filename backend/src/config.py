@@ -13,7 +13,7 @@ class MongoSettings(BaseModel):
     search_index_similarity: str = "cosine"
     search_index_field: str = "embedding"
     search_index_name: str = "embedding_index"
-    search_top_k: int = 20
+    search_top_k: int = 32
 
 
 class JWTSettings(BaseModel):
@@ -36,14 +36,14 @@ class ModelProvider(str, Enum):
 
 class EmbeddingClientSettings(BaseModel):
     model_provider: ModelProvider = ModelProvider.OLLAMA
-    model_name: str = "nomic-embed-text:latest"
+    model_name: str = "embeddinggemma:latest"
     base_url: str = "http://localhost:11434"
     num_ctx: int = 5000
     temperature: float = 0.0
-    chunk_size: int = 500
-    chunk_overlap: int = 100
-    mmr_final_k: int = 5
-    mmr_lambda_param: float = 0.5
+    chunk_size: int = 400
+    chunk_overlap: int = 80
+    mmr_final_k: int = 8
+    mmr_lambda_param: float = 0.7
     mmr_similarity_threashold: float = 0.3
     textcleaner_take: int = 2
     textcleaner_ratio: float = 0.7
@@ -56,6 +56,10 @@ class ChatClientSettings(BaseModel):
     num_ctx: int = 10000
     temperature: float = 0.2
     max_history: int = 10
+
+
+class InputClassifierSettings(BaseModel):
+    model_name: str = "path/to/roberta"
 
 
 class Settings(BaseSettings):
@@ -76,6 +80,9 @@ class Settings(BaseSettings):
 
     # Chat Client settings
     chat_client: ChatClientSettings = ChatClientSettings()
+
+    # Input Classifier settings
+    input_classifier: InputClassifierSettings = InputClassifierSettings()
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
