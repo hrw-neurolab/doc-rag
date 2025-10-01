@@ -23,12 +23,6 @@ if CONFIG.chat_client.model_provider == ModelProvider.OLLAMA:
         num_ctx=CONFIG.chat_client.num_ctx,
         temperature=CONFIG.chat_client.temperature,
     )
-    CLASSIFIER_CLIENT = ChatOllama(
-        model="llama3.2",
-        base_url=CONFIG.chat_client.base_url,
-        num_ctx=2048,
-        temperature=0.2,
-    )
 else:
     raise ValueError(
         f"Unsupported chat model provider: {CONFIG.chat_client.model_provider}"
