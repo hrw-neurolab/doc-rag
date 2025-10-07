@@ -10,8 +10,8 @@ import { useRouter } from "vue-router";
 const BASE_URL = import.meta.env.VITE_API_URL;
 const AXIOS = axios.create({ baseURL: BASE_URL });
 
-const sessionStore = useSessionStore();
-const router = useRouter();
+// const sessionStore = useSessionStore();
+// const router = useRouter();
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
@@ -26,7 +26,11 @@ AXIOS.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes('/auth/refresh')
+    ) {
       if (isRefreshing) {
         return new Promise((resolve) => {
           refreshSubscribers.push((token: string) => {
@@ -47,6 +51,8 @@ AXIOS.interceptors.response.use(
         originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
         return AXIOS(originalRequest);
       } catch (e) {
+        const sessionStore = useSessionStore();
+        const router = useRouter();
         sessionStore.clearSession();
         router.push('/auth/login');
         return Promise.reject(e);
