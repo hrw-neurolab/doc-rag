@@ -41,25 +41,12 @@ model_dir = "backend/src/nlp"
 model_name = CONFIG.input_classifier.model_name.split("/")[-1]
 model_path = Path(f"{model_dir}/{model_name}").resolve()
 
-model = AutoModelForSequenceClassification.from_pretrained(
-    str(model_path),
-    local_files_only=True,
-    trust_remote_code=False
-)
-tokenizer = AutoTokenizer.from_pretrained(
-    str(model_path),
-    local_files_only=True,
-    trust_remote_code=False
-)
-
-clf = pipeline("text-classification", model=model, tokenizer=tokenizer)
-
 # model = AutoModelForSequenceClassification.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
 # tokenizer = AutoTokenizer.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
 
 # classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
 
-# pipeline = pipeline(task="text-classification",model=str(model_path), tokenizer=str(model_path), local_files_only=True)
+pipeline = pipeline(task="text-classification",model=str(model_path), tokenizer=str(model_path), local_files_only=True)
 
 
 async def lang_check(query: str = "") -> str:
@@ -79,5 +66,5 @@ async def retrieve_check(query: str = "") -> bool:
     if not query:
         return False
     
-    prediction = clf(query)
+    prediction = pipeline(query)
     return True if prediction[0]["label"] == "LABEL_1" else False
