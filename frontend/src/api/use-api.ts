@@ -140,32 +140,7 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
             Authorization: `Bearer ${newAccessToken}`,
           },
         };
-        // mark as retried to avoid infinite loops in case something else still 401s
-        (newConfig as any)._retry = true;
-        
         return makeRequest<T>(newConfig, routeParams, successMessage);
-      }
-
-      // transient 404s during backend/model warm-up: retry chat a few times with backoff
-      if (
-        status === 404 &&
-        config.url?.endsWith(routes.chat.post.sendMessage()) &&
-        !skipAuth
-      ) {
-        const attempt = ((config as any)._attempt404 ?? 0) + 1;
-        if (attempt <= 3) {
-          const newConfig: AxiosRequestConfig = {
-            ...config,
-            headers: {
-              ...config.headers,
-            },
-          };
-          (newConfig as any)._attempt404 = attempt;
-      
-          // simple linear backoff: 500ms, 1000ms, 1500ms
-          await new Promise((resolve) => setTimeout(resolve, attempt * 500));
-          return makeRequest<T>(newConfig, routeParams, successMessage);
-        }
       }
 
       toast.add({
