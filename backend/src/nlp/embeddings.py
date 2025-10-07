@@ -167,121 +167,28 @@ async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
     return await EMBEDDING_CLIENT.aembed_documents(contents)
 
 
-# async def similarity_search(
-#     query: str,
-#     user_id: PydanticObjectId,
-#     # resource_ids: list[PydanticObjectId] | None,
-#     resource_ids: Optional[List[PydanticObjectId]]
-# # ) -> list[PDFChunk | Chunk]:
-# ) -> list[Union[PDFChunk, Chunk]]:
-#     """Perform a similarity search for the given query.
-
-#     Args:
-#         query (str): The query string to search for.
-#         user_id (PydanticObjectId): The ID of the user making the request.
-#         resource_ids (list[PydanticObjectId]): List of resource IDs to search within. (Optional)
-
-#     Returns:
-#         list[Chunk]: List of chunks that match the query.
-#     """
-#     formatted_query = f"task: search result | query:{query}"
-#     query_embedding = await EMBEDDING_CLIENT.aembed_query(formatted_query)
-
-#     pre_filter = {"user": user_id}
-
-#     if resource_ids:
-#         pre_filter["resource"] = {"$in": resource_ids}
-
-#     search_stage = vector_search_stage(
-#         query_embedding,
-#         CONFIG.mongo.search_index_field,
-#         CONFIG.mongo.search_index_name,
-#         CONFIG.mongo.search_top_k,
-#         pre_filter,
-#     )
-
-#     pipeline = [search_stage]
-#     # collection = Chunk.get_motor_collection()
-#     collection = Chunk.get_pymongo_collection()
-
-#     results = await collection.aggregate(pipeline).to_list()
-
-#     # chunks = []
-#     # for result in results:
-#     #     if "page_number" in result:
-#     #         chunks.append(PDFChunk(**result))
-#     #     else:
-#     #         chunks.append(Chunk(**result))
-
-#     # return chunks
-
-#     # results = await collection.aggregate(pipeline).to_list()
-
-#     # Build vectors and apply threshold
-#     indexed = [
-#         (idx, r)
-#         for idx, r in enumerate(results)
-#         if isinstance(r.get("embedding"), list)
-#     ]
-#     if not indexed:
-#         return []
-
-#     doc_vecs = [r["embedding"] for _, r in indexed]
-#     relevances = [__MMR_SELECTOR._cosine(query_embedding, v) for v in doc_vecs]
-
-#     # Filter by similarity threshold
-#     filtered = [
-#         (i, r, s)
-#         for (i, r), s in zip(indexed, relevances)
-#         if s >= CONFIG.embedding_client.mmr_similarity_threashold
-#     ]
-#     if not filtered:
-#         return []
-
-#     filtered_doc_vecs = [r["embedding"] for _, r, _ in filtered]
-#     selected_rel_indices = __MMR_SELECTOR.select(
-#         query_embedding,
-#         filtered_doc_vecs,
-#     )
-
-#     # Map back to original results order
-#     selected = [filtered[i] for i in selected_rel_indices]
-
-#     # chunks: list[Union[PDFChunk, Chunk]] = []
-#     # for _, result, _ in selected:
-#     #     if "page_number" in result:
-#     #         chunks.append(PDFChunk(**result))
-#     #     else:
-#     #         chunks.append(Chunk(**result))
-
-#     chunks = []
-#     for result in results:
-#         # Convert MongoDB's _id to id if needed
-#         if '_id' in result and 'id' not in result:
-#             result['id'] = result.pop('_id')
-        
-#         try:
-#             if "page_number" in result:
-#                 chunks.append(PDFChunk(**result))
-#             else:
-#                 chunks.append(Chunk(**result))
-#         except Exception as e:
-#             print(f"Error creating chunk: {e}")
-#             continue
-
-
-#     return chunks
-
 async def similarity_search(
     query: str,
     user_id: PydanticObjectId,
+    # resource_ids: list[PydanticObjectId] | None,
     resource_ids: Optional[List[PydanticObjectId]]
+# ) -> list[PDFChunk | Chunk]:
 ) -> list[Union[PDFChunk, Chunk]]:
-    """Perform a similarity search for the given query."""
+    """Perform a similarity search for the given query.
+
+    Args:
+        query (str): The query string to search for.
+        user_id (PydanticObjectId): The ID of the user making the request.
+        resource_ids (list[PydanticObjectId]): List of resource IDs to search within. (Optional)
+
+    Returns:
+        list[Chunk]: List of chunks that match the query.
+    """
     formatted_query = f"task: search result | query:{query}"
     query_embedding = await EMBEDDING_CLIENT.aembed_query(formatted_query)
 
     pre_filter = {"user": user_id}
+
     if resource_ids:
         pre_filter["resource"] = {"$in": resource_ids}
 
@@ -294,13 +201,23 @@ async def similarity_search(
     )
 
     pipeline = [search_stage]
+    # collection = Chunk.get_motor_collection()
+    collection = Chunk.get_pymongo_collection()
 
-    # Use Motor for async access
-    collection = Chunk.get_motor_collection()
-    # Bound the result size; use top_k to limit returned docs
-    results = await collection.aggregate(pipeline).to_list(CONFIG.mongo.search_top_k)
+    results = await collection.aggregate(pipeline).to_list()
 
-    # Prepare vectors for MMR
+    # chunks = []
+    # for result in results:
+    #     if "page_number" in result:
+    #         chunks.append(PDFChunk(**result))
+    #     else:
+    #         chunks.append(Chunk(**result))
+
+    # return chunks
+
+    # results = await collection.aggregate(pipeline).to_list()
+
+    # Build vectors and apply threshold
     indexed = [
         (idx, r)
         for idx, r in enumerate(results)
@@ -310,9 +227,9 @@ async def similarity_search(
         return []
 
     doc_vecs = [r["embedding"] for _, r in indexed]
-
-    # Compute cosine similarities and threshold
     relevances = [__MMR_SELECTOR._cosine(query_embedding, v) for v in doc_vecs]
+
+    # Filter by similarity threshold
     filtered = [
         (i, r, s)
         for (i, r), s in zip(indexed, relevances)
@@ -321,21 +238,28 @@ async def similarity_search(
     if not filtered:
         return []
 
-    # Run MMR on filtered docs
     filtered_doc_vecs = [r["embedding"] for _, r, _ in filtered]
-    selected_rel_indices = __MMR_SELECTOR.select(query_embedding, filtered_doc_vecs)
-    if not selected_rel_indices:
-        return []
+    selected_rel_indices = __MMR_SELECTOR.select(
+        query_embedding,
+        filtered_doc_vecs,
+    )
 
-    # Build chunks only from the MMR-selected docs (in selected order)
-    chunks: list[Union[PDFChunk, Chunk]] = []
-    for sel_idx in selected_rel_indices:
-        _, result, _ = filtered[sel_idx]
+    # Map back to original results order
+    # selected = [filtered[i] for i in selected_rel_indices]
 
-        # Normalize id field if needed
-        if "_id" in result and "id" not in result:
-            result["id"] = result.pop("_id")
+    # chunks: list[Union[PDFChunk, Chunk]] = []
+    # for _, result, _ in selected:
+    #     if "page_number" in result:
+    #         chunks.append(PDFChunk(**result))
+    #     else:
+    #         chunks.append(Chunk(**result))
 
+    chunks = []
+    for result in results:
+        # Convert MongoDB's _id to id if needed
+        if '_id' in result and 'id' not in result:
+            result['id'] = result.pop('_id')
+        
         try:
             if "page_number" in result:
                 chunks.append(PDFChunk(**result))
@@ -344,5 +268,6 @@ async def similarity_search(
         except Exception as e:
             print(f"Error creating chunk: {e}")
             continue
+
 
     return chunks
