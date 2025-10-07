@@ -13,57 +13,57 @@ const AXIOS = axios.create({ baseURL: BASE_URL });
 // const sessionStore = useSessionStore();
 // const router = useRouter();
 
-// let isRefreshing = false;
-// let refreshSubscribers: ((token: string) => void)[] = [];
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
 
-// function onRefreshed(token: string) {
-//   refreshSubscribers.forEach((cb) => cb(token));
-//   refreshSubscribers = [];
-// }
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
 
-// AXIOS.interceptors.response.use(
-//   (response) => response,
-//   async (error) => {
-//     const originalRequest = error.config;
+AXIOS.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-//     if (
-//       error.response?.status === 401 &&
-//       !originalRequest._retry &&
-//       !originalRequest.url.includes('/auth/refresh')
-//     ) {
-//       if (isRefreshing) {
-//         return new Promise((resolve) => {
-//           refreshSubscribers.push((token: string) => {
-//             originalRequest.headers['Authorization'] = `Bearer ${token}`;
-//             resolve(AXIOS(originalRequest));
-//           });
-//         });
-//       }
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes('/auth/refresh')
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          refreshSubscribers.push((token: string) => {
+            originalRequest.headers['Authorization'] = `Bearer ${token}`;
+            resolve(AXIOS(originalRequest));
+          });
+        });
+      }
 
-//       originalRequest._retry = true;
-//       isRefreshing = true;
+      originalRequest._retry = true;
+      isRefreshing = true;
 
-//       try {
-//         const newToken = await refreshToken(); // call your existing function
-//         if (!newToken) throw new Error('No token');
+      try {
+        const newToken = await refreshToken(); // call your existing function
+        if (!newToken) throw new Error('No token');
 
-//         onRefreshed(newToken);
-//         originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-//         return AXIOS(originalRequest);
-//       } catch (e) {
-//         const sessionStore = useSessionStore();
-//         const router = useRouter();
-//         sessionStore.clearSession();
-//         router.push('/auth/login');
-//         return Promise.reject(e);
-//       } finally {
-//         isRefreshing = false;
-//       }
-//     }
+        onRefreshed(newToken);
+        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+        return AXIOS(originalRequest);
+      } catch (e) {
+        const sessionStore = useSessionStore();
+        const router = useRouter();
+        sessionStore.clearSession();
+        router.push('/auth/login');
+        return Promise.reject(e);
+      } finally {
+        isRefreshing = false;
+      }
+    }
 
-//     return Promise.reject(error);
-//   }
-// );
+    return Promise.reject(error);
+  }
+);
 
 
 type RouteFn = (...args: string[]) => string;
