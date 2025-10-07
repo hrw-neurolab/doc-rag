@@ -109,34 +109,24 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
         error.message ||
         "An error occurred. Please try again.";
 
-      if (!skipAuth && errorMessage === "Token has expired.") {
-      // if (
-      //   !skipAuth &&
-      //   error.response?.status === 401 &&
-      //   tokens.value?.refresh_token
-      // ) {
+      // if (!skipAuth && errorMessage === "Token has expired.") {
+      if (
+        !skipAuth &&
+        error.response?.status === 401 &&
+        tokens.value?.refresh_token
+      ) {
         const newAccessToken = await refreshToken();
 
         if (!newAccessToken) return null;
 
-        // const newConfig: AxiosRequestConfig = {
-        //   ...config,
-        //   headers: {
-        //     ...config.headers,
-        //     Authorization: `Bearer ${newAccessToken}`,
-        //   },
-        // };
-        // return makeRequest<T>(newConfig, routeParams, successMessage);
         const newConfig: AxiosRequestConfig = {
           ...config,
-          url: route(...(routeParams || [])), // ✅ rebuild URL cleanly
           headers: {
             ...config.headers,
             Authorization: `Bearer ${newAccessToken}`,
           },
         };
         return makeRequest<T>(newConfig, routeParams, successMessage);
-        
       }
 
       toast.add({
