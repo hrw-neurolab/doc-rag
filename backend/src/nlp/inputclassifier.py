@@ -46,7 +46,7 @@ model_path = Path(f"{model_dir}/{model_name}").resolve()
 
 # classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
 
-pipeline = pipeline(task="text-classification",model=model_path, tokenizer=model_path, local_files_only=True)
+pipeline = pipeline(task="text-classification",model=str(model_path), tokenizer=str(model_path), local_files_only=True)
 
 
 async def lang_check(query: str = "") -> str:
