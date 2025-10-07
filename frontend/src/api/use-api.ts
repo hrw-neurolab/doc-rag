@@ -31,7 +31,11 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
   const abort = () => controller.abort();
 
   const refreshToken = async () => {
+
+    console.log("refreshToken() called. Current tokens:", tokens.value);
+
     if (!tokens.value) {
+      console.error("No tokens available to refresh.");
       throw new Error("No tokens available to refresh.");
     }
 
@@ -45,9 +49,13 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
 
     try {
       const response = await AXIOS.request<TokensWithUser>(refreshConfig);
+      console.log("refreshToken() succeeded. Response data:", response.data);
+
       sessionStore.storeSession(response.data);
       return response.data.access_token;
-    } catch {
+    // } catch {
+    } catch (err: any) {
+      console.error("refreshToken() failed:", err.response?.data || err.message);
       toast.add({
         severity: "error",
         summary: "Error",
