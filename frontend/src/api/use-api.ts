@@ -10,6 +10,8 @@ import { useRouter } from "vue-router";
 const BASE_URL = import.meta.env.VITE_API_URL;
 const AXIOS = axios.create({ baseURL: BASE_URL });
 
+const sessionStore = useSessionStore();
+const router = useRouter();
 
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
