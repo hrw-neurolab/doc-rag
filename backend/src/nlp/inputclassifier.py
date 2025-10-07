@@ -62,7 +62,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
 model = AutoModelForSequenceClassification.from_pretrained(model_dir, local_files_only=True)
 
 # Build pipeline with objects
-clf = TextClassificationPipeline(model=model, tokenizer=tokenizer)
+pipeline = TextClassificationPipeline(model=model, tokenizer=tokenizer)
 
 
 # Load manually
