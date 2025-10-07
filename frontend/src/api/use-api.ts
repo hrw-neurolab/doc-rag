@@ -119,23 +119,23 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
 
         if (!newAccessToken) return null;
 
-        const newConfig: AxiosRequestConfig = {
-          ...config,
-          headers: {
-            ...config.headers,
-            Authorization: `Bearer ${newAccessToken}`,
-          },
-        };
-        return makeRequest<T>(newConfig, routeParams, successMessage);
         // const newConfig: AxiosRequestConfig = {
         //   ...config,
-        //   url: route(...(routeParams || [])), // ✅ rebuild URL cleanly
         //   headers: {
         //     ...config.headers,
         //     Authorization: `Bearer ${newAccessToken}`,
         //   },
         // };
         // return makeRequest<T>(newConfig, routeParams, successMessage);
+        const newConfig: AxiosRequestConfig = {
+          ...config,
+          url: route(...(routeParams || [])), // ✅ rebuild URL cleanly
+          headers: {
+            ...config.headers,
+            Authorization: `Bearer ${newAccessToken}`,
+          },
+        };
+        return makeRequest<T>(newConfig, routeParams, successMessage);
         
       }
 
