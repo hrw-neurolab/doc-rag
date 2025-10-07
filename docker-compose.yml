@@ -78,6 +78,7 @@ services:
 networks:
   doc-rag:
     name: doc-rag
+    driver: bridge
 
 volumes:
   mongodb-data:
