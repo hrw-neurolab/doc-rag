@@ -76,31 +76,21 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
 
     const accessToken = tokens.value?.access_token;
 
-    // if (!accessToken && !skipAuth) {
-    //   toast.add({
-    //     severity: "error",
-    //     summary: "Error",
-    //     detail: "You need to be logged in to perform this action.",
-    //     life: 5000,
-    //   });
-    //   loading.value = false;
-    //   return null;
-    // }
-    let effectiveAccessToken = accessToken;
-    if (!effectiveAccessToken && !skipAuth) {
-      const newToken = await refreshToken();
-      if (!newToken) {
-        loading.value = false;
-        return null;
-      }
-      effectiveAccessToken = newToken;
+    if (!accessToken && !skipAuth) {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "You need to be logged in to perform this action.",
+        life: 5000,
+      });
+      loading.value = false;
+      return null;
     }
 
     config.url = route(...(routeParams || []));
 
     config.headers = {
-      // Authorization: !accessToken ? undefined : `Bearer ${accessToken}`,
-      Authorization: !effectiveAccessToken ? undefined : `Bearer ${effectiveAccessToken}`,
+      Authorization: !accessToken ? undefined : `Bearer ${accessToken}`,
       ...config.headers,
     };
 
@@ -121,16 +111,15 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
       return response;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const status = error.response?.status;
       const errorMessage: string =
         error.response?.data?.message ||
         error.response?.data?.detail ||
         error.message ||
         "An error occurred. Please try again.";
 
-      // if (!skipAuth && errorMessage === "Token has expired.") {
-      if (!skipAuth && status === 401) {
+      if (!skipAuth && errorMessage === "Token has expired.") {
         const newAccessToken = await refreshToken();
+
         if (!newAccessToken) return null;
 
         const newConfig: AxiosRequestConfig = {
