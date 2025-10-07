@@ -49,7 +49,13 @@ from src.config import CONFIG
 # model_path = Path(model_dir) / model_name
 
 
-model_dir = CONFIG.input_classifier.model_name.split("/")[-1]
+# from pathlib import Path
+
+model_dir = Path("backend/src/nlp") / CONFIG.input_classifier.model_name.split("/")[-1]
+assert model_dir.exists(), f"Model path does not exist: {model_dir}"
+
+
+# model_dir = CONFIG.input_classifier.model_name.split("/")[-1]
 
 # Load manually
 tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
