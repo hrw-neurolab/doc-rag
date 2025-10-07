@@ -12,7 +12,6 @@ pypdf
 motor
 nltk
 tiktoken
-torch
 transformers
 wordfreq
 langdetect
