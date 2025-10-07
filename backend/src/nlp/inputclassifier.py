@@ -35,7 +35,7 @@ from src.config import CONFIG
 
 # chain = CLASSIFIER_PROMPT_TEMPLATE | CLASSIFIER_CLIENT | StrOutputParser()
 
-model_dir = "./backend/src/nlp"
+model_dir = "backend/src/nlp"
 model_name = CONFIG.input_classifier.model_name.split("/")[-1]
 pipeline = pipeline(task="text-classification", model=f"{model_dir}/{model_name}")
 
