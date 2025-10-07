@@ -7,7 +7,7 @@ from langdetect import detect
 #     SystemMessagePromptTemplate,
 # )
 # from langchain_core.output_parsers import StrOutputParser
-from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import pipeline
 # from src.nlp.clients import CLASSIFIER_CLIENT
 from src.config import CONFIG
 
@@ -37,13 +37,7 @@ from src.config import CONFIG
 
 model_dir = "./backend/src/nlp"
 model_name = CONFIG.input_classifier.model_name.split("/")[-1]
-
-model = AutoModelForSequenceClassification.from_pretrained(f"{model_dir}/{model_name}")
-tokenizer = AutoTokenizer.from_pretrained(f"{model_dir}/{model_name}")
-
-# classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
-
-pipeline = pipeline(task="text-classification", model=model, tokenizer=tokenizer)
+pipeline = pipeline(task="text-classification", model=f"{model_dir}/{model_name}")
 
 
 async def lang_check(query: str = "") -> str:
