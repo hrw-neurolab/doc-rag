@@ -13,10 +13,11 @@ Upload PDFs or snippets, the backend indexes them and uses LLMs to answer your q
 
 1. Ensure the environment files are in place:
    * `backend/.env.docker` already exists with sane defaults—tweak it if needed.
+   * Query classifier model has to be manually added to `backend/src/nlp`. The model could be trained using the scripts under `text_classifier` (refer to `text_classifier/README.md`) for further information.
    * Copy the frontend example file:
-     ```bash
-     cp frontend/.env.example frontend/.env
-     ```
+   ```bash
+   cp frontend/.env.example frontend/.env
+   ```
 2. Build and launch the stack:
    ```bash
    docker compose up --build
