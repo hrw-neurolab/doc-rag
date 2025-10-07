@@ -25,6 +25,7 @@ services:
       - ./backend/.env.docker
     volumes:
       - file-storage:/fastapi/storage
+      - ./backend/src/nlp:/fastapi/backend/src/nlp:ro
     networks:
       - doc-rag
 
