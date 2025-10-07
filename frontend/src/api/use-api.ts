@@ -76,31 +76,31 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
 
     const accessToken = tokens.value?.access_token;
 
-    // if (!accessToken && !skipAuth) {
-    //   toast.add({
-    //     severity: "error",
-    //     summary: "Error",
-    //     detail: "You need to be logged in to perform this action.",
-    //     life: 5000,
-    //   });
-    //   loading.value = false;
-    //   return null;
-    // }
-    let effectiveAccessToken = accessToken;
-    if (!effectiveAccessToken && !skipAuth) {
-      const newToken = await refreshToken();
-      if (!newToken) {
-        loading.value = false;
-        return null;
-      }
-      effectiveAccessToken = newToken;
+    if (!accessToken && !skipAuth) {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "You need to be logged in to perform this action.",
+        life: 5000,
+      });
+      loading.value = false;
+      return null;
     }
+    // let effectiveAccessToken = accessToken;
+    // if (!effectiveAccessToken && !skipAuth) {
+    //   const newToken = await refreshToken();
+    //   if (!newToken) {
+    //     loading.value = false;
+    //     return null;
+    //   }
+    //   effectiveAccessToken = newToken;
+    // }
 
     config.url = route(...(routeParams || []));
 
     config.headers = {
-      // Authorization: !accessToken ? undefined : `Bearer ${accessToken}`,
-      Authorization: !effectiveAccessToken ? undefined : `Bearer ${effectiveAccessToken}`,
+      Authorization: !accessToken ? undefined : `Bearer ${accessToken}`,
+      // Authorization: !effectiveAccessToken ? undefined : `Bearer ${effectiveAccessToken}`,
       ...config.headers,
     };
 
@@ -146,27 +146,27 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
         return makeRequest<T>(newConfig, routeParams, successMessage);
       }
 
-      // transient 404s during backend/model warm-up: retry chat a few times with backoff
-      if (
-        status === 404 &&
-        config.url?.endsWith(routes.chat.post.sendMessage()) &&
-        !skipAuth
-      ) {
-        const attempt = ((config as any)._attempt404 ?? 0) + 1;
-        if (attempt <= 3) {
-          const newConfig: AxiosRequestConfig = {
-            ...config,
-            headers: {
-              ...config.headers,
-            },
-          };
-          (newConfig as any)._attempt404 = attempt;
+      // // transient 404s during backend/model warm-up: retry chat a few times with backoff
+      // if (
+      //   status === 404 &&
+      //   config.url?.endsWith(routes.chat.post.sendMessage()) &&
+      //   !skipAuth
+      // ) {
+      //   const attempt = ((config as any)._attempt404 ?? 0) + 1;
+      //   if (attempt <= 3) {
+      //     const newConfig: AxiosRequestConfig = {
+      //       ...config,
+      //       headers: {
+      //         ...config.headers,
+      //       },
+      //     };
+      //     (newConfig as any)._attempt404 = attempt;
       
-          // simple linear backoff: 500ms, 1000ms, 1500ms
-          await new Promise((resolve) => setTimeout(resolve, attempt * 500));
-          return makeRequest<T>(newConfig, routeParams, successMessage);
-        }
-      }
+      //     // simple linear backoff: 500ms, 1000ms, 1500ms
+      //     await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      //     return makeRequest<T>(newConfig, routeParams, successMessage);
+      //   }
+      // }
 
       toast.add({
         severity: "error",
