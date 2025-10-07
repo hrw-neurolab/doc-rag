@@ -26,6 +26,7 @@ from src.config import CONFIG
 # {query}\
 # """
 
+
 # CLASSIFIER_PROMPT_TEMPLATE = ChatPromptTemplate(
 #     [
 #         SystemMessagePromptTemplate.from_template(system_message),
@@ -33,11 +34,28 @@ from src.config import CONFIG
 #     ]
 # )
 
+
 # chain = CLASSIFIER_PROMPT_TEMPLATE | CLASSIFIER_CLIENT | StrOutputParser()
 
+# model_dir = "backend/src/nlp"
+# model_name = CONFIG.input_classifier.model_name.split("/")[-1]
+# model_path = Path(f"{model_dir}/{model_name}").resolve()
+
+# from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+# from pathlib import Path
+
+# model_dir = "backend/src/nlp"
+# model_name = CONFIG.input_classifier.model_name.split("/")[-1]
+# model_path = Path(model_dir) / model_name
+
+
+# from pathlib import Path
 
 model_dir = Path("backend/src/nlp") / CONFIG.input_classifier.model_name.split("/")[-1]
 assert model_dir.exists(), f"Model path does not exist: {model_dir}"
+
+
+# model_dir = CONFIG.input_classifier.model_name.split("/")[-1]
 
 # Load manually
 tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
@@ -46,6 +64,39 @@ model = AutoModelForSequenceClassification.from_pretrained(model_dir, local_file
 # Build pipeline with objects
 clf = TextClassificationPipeline(model=model, tokenizer=tokenizer)
 
+
+# Load manually
+# model = AutoModelForSequenceClassification.from_pretrained(
+#     str(model_path),
+#     local_files_only=True,
+#     # trust_remote_code=True 
+# )
+# tokenizer = AutoTokenizer.from_pretrained(
+#     str(model_path),
+#     local_files_only=True,
+#     # trust_remote_code=True
+# )
+
+# # Pass objects directly into pipeline
+# clf = pipeline(
+#     task="text-classification",
+#     model=model,
+#     tokenizer=tokenizer
+# )
+
+# clf = pipeline(
+#     "text-classification",
+#     model=f".{model_path}",
+#     tokenizer=f".{model_path}",
+#     local_files_only=True
+# )
+
+# model = AutoModelForSequenceClassification.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
+# tokenizer = AutoTokenizer.from_pretrained(os.path.abspath(f"{model_dir}/{model_name}"))
+
+# classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
+
+# pipeline = pipeline(task="text-classification",model=str(model_path), tokenizer=str(model_path), local_files_only=True)
 
 
 async def lang_check(query: str = "") -> str:
