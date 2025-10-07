@@ -10,54 +10,6 @@ import { useRouter } from "vue-router";
 const BASE_URL = import.meta.env.VITE_API_URL;
 const AXIOS = axios.create({ baseURL: BASE_URL });
 
-
-let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
-
-function onRefreshed(token: string) {
-  refreshSubscribers.forEach((cb) => cb(token));
-  refreshSubscribers = [];
-}
-
-AXIOS.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          refreshSubscribers.push((token: string) => {
-            originalRequest.headers['Authorization'] = `Bearer ${token}`;
-            resolve(AXIOS(originalRequest));
-          });
-        });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const newToken = await refreshToken(); // call your existing function
-        if (!newToken) throw new Error('No token');
-
-        onRefreshed(newToken);
-        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-        return AXIOS(originalRequest);
-      } catch (e) {
-        sessionStore.clearSession();
-        router.push('/auth/login');
-        return Promise.reject(e);
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-
 type RouteFn = (...args: string[]) => string;
 
 type GetRequestConfig<R> = {
@@ -134,11 +86,21 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
       loading.value = false;
       return null;
     }
+    // let effectiveAccessToken = accessToken;
+    // if (!effectiveAccessToken && !skipAuth) {
+    //   const newToken = await refreshToken();
+    //   if (!newToken) {
+    //     loading.value = false;
+    //     return null;
+    //   }
+    //   effectiveAccessToken = newToken;
+    // }
 
     config.url = route(...(routeParams || []));
 
     config.headers = {
       Authorization: !accessToken ? undefined : `Bearer ${accessToken}`,
+      // Authorization: !effectiveAccessToken ? undefined : `Bearer ${effectiveAccessToken}`,
       ...config.headers,
     };
 
@@ -183,6 +145,28 @@ export const useApi = <R extends RouteFn>(route: R, skipAuth: boolean = false) =
         
         return makeRequest<T>(newConfig, routeParams, successMessage);
       }
+
+      // // transient 404s during backend/model warm-up: retry chat a few times with backoff
+      // if (
+      //   status === 404 &&
+      //   config.url?.endsWith(routes.chat.post.sendMessage()) &&
+      //   !skipAuth
+      // ) {
+      //   const attempt = ((config as any)._attempt404 ?? 0) + 1;
+      //   if (attempt <= 3) {
+      //     const newConfig: AxiosRequestConfig = {
+      //       ...config,
+      //       headers: {
+      //         ...config.headers,
+      //       },
+      //     };
+      //     (newConfig as any)._attempt404 = attempt;
+      
+      //     // simple linear backoff: 500ms, 1000ms, 1500ms
+      //     await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      //     return makeRequest<T>(newConfig, routeParams, successMessage);
+      //   }
+      // }
 
       toast.add({
         severity: "error",
