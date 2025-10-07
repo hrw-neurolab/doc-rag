@@ -9,7 +9,7 @@ from langdetect import detect
 #     SystemMessagePromptTemplate,
 # )
 # from langchain_core.output_parsers import StrOutputParser
-from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer, TextClassificationPipeline
+from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 # from src.nlp.clients import CLASSIFIER_CLIENT
 from src.config import CONFIG
 
@@ -44,39 +44,28 @@ from src.config import CONFIG
 # from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 # from pathlib import Path
 
-# model_dir = "backend/src/nlp"
-# model_name = CONFIG.input_classifier.model_name.split("/")[-1]
-# model_path = Path(model_dir) / model_name
-
-
-model_dir = Path("backend/src/nlp") / CONFIG.input_classifier.model_name.split("/")[-1]
+model_dir = "backend/src/nlp"
+model_name = CONFIG.input_classifier.model_name.split("/")[-1]
+model_path = Path(model_dir) / model_name
 
 # Load manually
-tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
-model = AutoModelForSequenceClassification.from_pretrained(model_dir, local_files_only=True)
+model = AutoModelForSequenceClassification.from_pretrained(
+    str(model_path),
+    local_files_only=True,
+    # trust_remote_code=True 
+)
+tokenizer = AutoTokenizer.from_pretrained(
+    str(model_path),
+    local_files_only=True,
+    # trust_remote_code=True
+)
 
-# Build pipeline with objects
-pipeline = TextClassificationPipeline(model=model, tokenizer=tokenizer)
-
-
-# Load manually
-# model = AutoModelForSequenceClassification.from_pretrained(
-#     str(model_path),
-#     local_files_only=True,
-#     # trust_remote_code=True 
-# )
-# tokenizer = AutoTokenizer.from_pretrained(
-#     str(model_path),
-#     local_files_only=True,
-#     # trust_remote_code=True
-# )
-
-# # Pass objects directly into pipeline
-# clf = pipeline(
-#     task="text-classification",
-#     model=model,
-#     tokenizer=tokenizer
-# )
+# Pass objects directly into pipeline
+clf = pipeline(
+    task="text-classification",
+    model=model,
+    tokenizer=tokenizer
+)
 
 # clf = pipeline(
 #     "text-classification",
