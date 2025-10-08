@@ -17,6 +17,8 @@ const hideTimeout = ref<number | null>(null);
 
 const { get } = useApi(routes.resources.get.getChunk);
 
+let currentlyOpenPopover: any = null;
+
 const getHoverContent = async () => {
   let chunk = fetchedChunks.value.find((c) => c._id === chunkId);
 
@@ -51,8 +53,12 @@ const showPopover = (e: MouseEvent) => {
     clearTimeout(hideTimeout.value);
     hideTimeout.value = null;
   }
-  popover.value?.hide();
+  // popover.value?.hide();
+  if (currentlyOpenPopover && currentlyOpenPopover !== popover.value) {
+    currentlyOpenPopover.hide();
+  }
   popover.value?.show(e);
+  currentlyOpenPopover = popover.value;
 };
 
 const scheduleHide = () => {
@@ -61,6 +67,9 @@ const scheduleHide = () => {
   }
   hideTimeout.value = window.setTimeout(() => {
     popover.value?.hide();
+    if (currentlyOpenPopover === popover.value) {
+      currentlyOpenPopover = null;
+    }
   }, 150);
 };
 
