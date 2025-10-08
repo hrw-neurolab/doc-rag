@@ -5,7 +5,7 @@ import { useResourceStore } from "@/stores/resource-store";
 import type { Chunk } from "@/types/api";
 import { storeToRefs } from "pinia";
 import { Popover, Tag, Divider } from "primevue";
-import { onMounted, ref, useTemplateRef } from "vue";
+import { onMounted, ref, useTemplateRef, reactive } from "vue";
 
 const { chunkId, citationNumber } = defineProps<{ chunkId: string; citationNumber: number }>();
 
@@ -78,7 +78,7 @@ onMounted(getHoverContent);
 
 <template>
   <!-- <div class="assistant-citation" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave"> -->
-    <div class="assistant-citation" @mouseenter="showPopover" @mouseleave="ScheduleHide">
+  <div class="assistant-citation" @mouseenter="showPopover" @mouseleave="scheduleHide">
     <Tag :style="{ padding: '2px 5px' }" :value="citationNumber" />
     <Popover ref="popover">
       <!-- <div v-if="hoverContent" class="hover-content"> -->
