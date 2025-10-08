@@ -66,7 +66,7 @@ const scheduleHide = () => {
         currentlyOpenPopover = null;
       }
     }
-  }, 150);
+  }, 120);
 };
 
 onMounted(getHoverContent);
@@ -76,8 +76,8 @@ onMounted(getHoverContent);
   <!-- <div class="assistant-citation" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave"> -->
   <div
     class="assistant-citation"
-    @mouseenter="showPopover"
-    @mouseleave="scheduleHide"
+    @mouseenter="hoveringTag = true; showPopover($event)"
+    @mouseleave="hoveringTag = false; scheduleHide"
   >
     <Tag :style="{ padding: '2px 5px' }" :value="citationNumber" />
     <Popover ref="popover">
@@ -86,7 +86,7 @@ onMounted(getHoverContent);
         v-if="hoverContent"
         class="hover-content"
         @mouseenter="hoveringPopover = true; if(hideTimeout) clearTimeout(hideTimeout)"
-        @mouseleave="hoveringPopover = False; scheduleHide"
+        @mouseleave="hoveringPopover = false; scheduleHide"
       >
         <h3>{{ hoverContent.title }}</h3>
         <small v-if="hoverContent.page !== undefined">Page {{ hoverContent.page + 1 }}</small>
