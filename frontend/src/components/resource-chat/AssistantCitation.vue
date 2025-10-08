@@ -13,6 +13,7 @@ const resourceStore = useResourceStore();
 const { resources, fetchedChunks } = storeToRefs(resourceStore);
 
 const hoverContent = ref<{ title: string; content: string; page?: number } | null>(null);
+const hideTimeout = ref<number | null>(null);
 
 const { get } = useApi(routes.resources.get.getChunk);
 
@@ -44,14 +45,36 @@ const handleMouseEnter = (e: MouseEvent) => {
 
 const handleMouseLeave = () => popover.value?.hide();
 
+const showPopover = (e: MouseEvent) => {
+  if (!hoverContent.value) return;
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value);
+    hideTimeout.value = null;
+  }
+  popover.value?.show(e);
+};
+
+const scheduleHide = () => {
+  hideTimeout.value = window.setTimeout(() => {
+    popover.value?.hide();
+  }, 150); // slight delay prevents flicker
+};
+
 onMounted(getHoverContent);
 </script>
 
 <template>
-  <div class="assistant-citation" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+  <!-- <div class="assistant-citation" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave"> -->
+    <div class="assistant-citation" @mouseenter="showPopover" @mouseleave="ScheduleHide">
     <Tag :style="{ padding: '2px 5px' }" :value="citationNumber" />
     <Popover ref="popover">
-      <div v-if="hoverContent" class="hover-content">
+      <!-- <div v-if="hoverContent" class="hover-content"> -->
+      <div
+        v-if="hoverContent"
+        class="hover-content"
+        @mouseenter="() => hideTimeout && clearTimeout(hideTimeout)"
+        @mouseleave="scheduleHide"
+      >
         <h3>{{ hoverContent.title }}</h3>
         <small v-if="hoverContent.page !== undefined">Page {{ hoverContent.page + 1 }}</small>
         <Divider style="margin-top: 0.5rem; margin-bottom: 0.5rem" />
