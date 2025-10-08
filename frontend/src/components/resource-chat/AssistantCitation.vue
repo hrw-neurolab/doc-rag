@@ -85,8 +85,8 @@ onMounted(getHoverContent);
   <!-- <div class="assistant-citation" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave"> -->
   <div
     class="assistant-citation"
-    @mouseenter="showPopover"
-    @mouseleave="scheduleHide"
+    @mouseenter="hoveringTag = true; showPopover($event)"
+    @mouseleave="hoveringTag = false; scheduleHide"
   >
     <Tag :style="{ padding: '2px 5px' }" :value="citationNumber" />
     <Popover ref="popover">
@@ -94,6 +94,7 @@ onMounted(getHoverContent);
       <div
         v-if="hoverContent"
         class="hover-content"
+        :style="{ position: 'absolute', zIndex: 1000 }"
         @mouseenter="hoveringPopover = true; if(hideTimeout) clearTimeout(hideTimeout)"
         @mouseleave="hoveringPopover = False; scheduleHide"
       >
