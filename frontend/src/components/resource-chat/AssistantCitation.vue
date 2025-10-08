@@ -38,12 +38,12 @@ const getHoverContent = async () => {
 
 const popover = useTemplateRef("popover");
 
-const handleMouseEnter = (e: MouseEvent) => {
-  if (!hoverContent.value) return;
-  popover.value?.show(e);
-};
+// const handleMouseEnter = (e: MouseEvent) => {
+//   if (!hoverContent.value) return;
+//   popover.value?.show(e);
+// };
 
-const handleMouseLeave = () => popover.value?.hide();
+// const handleMouseLeave = () => popover.value?.hide();
 
 const showPopover = (e: MouseEvent) => {
   if (!hoverContent.value) return;
@@ -51,13 +51,17 @@ const showPopover = (e: MouseEvent) => {
     clearTimeout(hideTimeout.value);
     hideTimeout.value = null;
   }
+  popover.value?.hide();
   popover.value?.show(e);
 };
 
 const scheduleHide = () => {
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value);
+  }
   hideTimeout.value = window.setTimeout(() => {
     popover.value?.hide();
-  }, 150); // slight delay prevents flicker
+  }, 150);
 };
 
 onMounted(getHoverContent);
