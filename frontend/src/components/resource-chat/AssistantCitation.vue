@@ -42,13 +42,6 @@ const getHoverContent = async () => {
 
 const popover = useTemplateRef("popover");
 
-// const handleMouseEnter = (e: MouseEvent) => {
-//   if (!hoverContent.value) return;
-//   popover.value?.show(e);
-// };
-
-// const handleMouseLeave = () => popover.value?.hide();
-
 const showPopover = (e: MouseEvent) => {
   if (!hoverContent.value) return;
   if (hideTimeout.value) {
@@ -64,11 +57,9 @@ const showPopover = (e: MouseEvent) => {
 };
 
 const scheduleHide = () => {
-  if (hideTimeout.value) {
-    clearTimeout(hideTimeout.value);
-  }
-  hideTimeout.value = window.setTimeout(() => {
-    
+  if (hideTimeout.value) clearTimeout(hideTimeout.value);
+
+  hideTimeout.value = window.setTimeout(() => {  
     if (!hoveringTag.value && !hoveringPopover.value) {
       popover.value?.hide();
       if (currentlyOpenPopover === popover.value) {
@@ -89,7 +80,11 @@ onMounted(getHoverContent);
     @mouseleave="scheduleHide"
   >
     <Tag :style="{ padding: '2px 5px' }" :value="citationNumber" />
-    <Popover ref="popover">
+    <Popover
+      ref="popover"
+      @show="hoveringPopover = true"
+      @hide="hoveringPopover = false"
+    >
       <!-- <div v-if="hoverContent" class="hover-content"> -->
       <div
         v-if="hoverContent"
