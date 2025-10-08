@@ -80,11 +80,7 @@ onMounted(getHoverContent);
     @mouseleave="scheduleHide"
   >
     <Tag :style="{ padding: '2px 5px' }" :value="citationNumber" />
-    <Popover
-      ref="popover"
-      @show="hoveringPopover = true"
-      @hide="hoveringPopover = false"
-    >
+    <Popover ref="popover">
       <!-- <div v-if="hoverContent" class="hover-content"> -->
       <div
         v-if="hoverContent"
