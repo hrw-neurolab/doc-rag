@@ -66,7 +66,8 @@ defineExpose({ scrollToBottom });
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* justify-content: center; */
+  justify-content: flex-start;
   width: 100%;
   flex-grow: 1;
   overflow-y: auto;
