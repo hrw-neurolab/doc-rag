@@ -43,14 +43,15 @@ async def chat(
             user_id=user.id,
             resource_ids=body.resource_ids,
         )
+
+        if not chunks:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No resources found for the given user or resource IDs.",
+            )
+    
     else:
         chunks = []
-
-    if not chunks:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No resources found for the given user or resource IDs.",
-        )
 
     return StreamingResponse(
         content=stream_response(body.query, chunks, user.id),
