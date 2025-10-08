@@ -76,8 +76,8 @@ onMounted(getHoverContent);
   <!-- <div class="assistant-citation" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave"> -->
   <div
     class="assistant-citation"
-    @mouseenter="hoveringTag = true; showPopover($event)"
-    @mouseleave="hoveringTag = false; scheduleHide"
+    @mouseenter="showPopover"
+    @mouseleave="scheduleHide"
   >
     <Tag :style="{ padding: '2px 5px' }" :value="citationNumber" />
     <Popover ref="popover">
