@@ -8,6 +8,7 @@ from src.chat.models import ResourceChatBody
 from src.nlp.chat import stream_response, clear_chat
 from src.nlp.embeddings import similarity_search
 from src.users.models import UserDB
+from src.nlp.inputclassifier import retrieve_check
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -29,17 +30,27 @@ async def chat(
     Raises:
         HTTPException: If no resources are found for the given user or resource IDs.
     """
-    chunks = await similarity_search(
-        query=body.query,
-        user_id=user.id,
-        resource_ids=body.resource_ids,
-    )
+    # chunks = await similarity_search(
+    #     query=body.query,
+    #     user_id=user.id,
+    #     resource_ids=body.resource_ids,
+    # )
+    needs_retrieval = await retrieve_check(body.query)
 
-    # if not chunks:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_404_NOT_FOUND,
-    #         detail="No resources found for the given user or resource IDs.",
-    #     )
+    if needs_retrieval:
+        chunks = await similarity_search(
+            query=body.query,
+            user_id=user.id,
+            resource_ids=body.resource_ids,
+        )
+    else:
+        chunks = []
+
+    if not chunks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No resources found for the given user or resource IDs.",
+        )
 
     return StreamingResponse(
         content=stream_response(body.query, chunks, user.id),

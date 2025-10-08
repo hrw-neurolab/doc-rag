@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from src.config import CONFIG
 from src.nlp.clients import CHAT_CLIENT
-from src.nlp.inputclassifier import lang_check, retrieve_check
+from src.nlp.inputclassifier import lang_check
 from src.resources.models import Chunk, Resource
 
 
@@ -220,13 +220,13 @@ async def stream_response(
         str: Streaming response from the chat model.
     """
     language = await lang_check(query)
-    needs_retrieval = await retrieve_check(query)
+    needs_retrieval = bool(resources)
 
     chain = await make_prompt_chain(language=language,
                                     needs_retrieval=needs_retrieval)
 
     # Build title lookup for chunks' resources
-    if needs_retrieval and resources:
+    if needs_retrieval:
         resource_ids = {c.resource for c in resources}
         resource_docs = await Resource.find({"_id": {"$in": list(resource_ids)}}).to_list()
         id_to_title = {str(r.id): r.title for r in resource_docs}
