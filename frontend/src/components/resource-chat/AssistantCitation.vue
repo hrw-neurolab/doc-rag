@@ -94,7 +94,6 @@ onMounted(getHoverContent);
       <div
         v-if="hoverContent"
         class="hover-content"
-        :style="{ position: 'absolute', zIndex: 1000 }"
         @mouseenter="hoveringPopover = true; if(hideTimeout) clearTimeout(hideTimeout)"
         @mouseleave="hoveringPopover = False; scheduleHide"
       >
