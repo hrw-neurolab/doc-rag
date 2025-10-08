@@ -94,7 +94,7 @@ onMounted(getHoverContent);
       <div
         v-if="hoverContent"
         class="hover-content"
-        @mouseenter="hoveringPopover = true; hideTimeout && clearTimeout(hideTimeout)"
+        @mouseenter="hoveringPopover = true; if(hideTimeout) clearTimeout(hideTimeout)"
         @mouseleave="hoveringPopover = False; scheduleHide"
       >
         <h3>{{ hoverContent.title }}</h3>
