@@ -86,7 +86,7 @@ onMounted(getHoverContent);
         v-if="hoverContent"
         class="hover-content"
         @mouseenter="hoveringPopover = true; if(hideTimeout) clearTimeout(hideTimeout)"
-        @mouseleave="hoveringPopover = false; scheduleHide"
+        @mouseleave="hoveringPopover = false; scheduleHide()"
       >
         <h3>{{ hoverContent.title }}</h3>
         <small v-if="hoverContent.page !== undefined">Page {{ hoverContent.page + 1 }}</small>
