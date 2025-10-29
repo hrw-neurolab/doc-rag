@@ -10,6 +10,7 @@ import { getMongoId } from "@/util/text-parsing";
 import { useResourceStore } from "@/stores/resource-store";
 import WelcomeScreen from "./WelcomeScreen.vue";
 import { storeToRefs } from "pinia";
+import type { Chunk } from "@/types/api";
 
 const messages = reactive<Message[]>([]);
 
@@ -86,6 +87,42 @@ function formatAsPlainText(msgs: Message[]): string {
   return parts.join("\n\n");
 }
 
+function truncate(text: string, max = 300): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max - 1) + "…";
+}
+
+function formatAsMarkdownWithReferences(
+  msgs: Message[],
+  citationDetails: Map<string, { title: string; page?: number; content: string }>
+): string {
+  const parts: string[] = [];
+  for (const m of msgs) {
+    if (m.role === "user") {
+      parts.push(`### User\n\n${m.content}`);
+    } else {
+      parts.push(`### Assistant\n\n${m.content.text}`);
+
+      const ids = m.content.citations ?? [];
+      if (ids.length > 0) {
+        parts.push(`\n#### References`);
+        ids.forEach((id, idx) => {
+          const num = idx + 1;
+          const d = citationDetails.get(id);
+          if (!d) {
+            parts.push(`[${num}] (unavailable)`);
+            return;
+          }
+          const pageSuffix = typeof d.page === "number" ? ` — Page ${d.page}` : "";
+          parts.push(`[${num}] ${d.title}${pageSuffix}\n\nExcerpt: "${truncate(d.content)}"`);
+        });
+      }
+    }
+    parts.push(""); // blank line between messages
+  }
+  return parts.join("\n");
+}
+
 function downloadFile(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -96,10 +133,50 @@ function downloadFile(filename: string, content: string, mime: string) {
   URL.revokeObjectURL(url);
 }
 
-function handleExport() {
-  const text = formatAsPlainText(messages);
+// function handleExport() {
+//   const text = formatAsPlainText(messages);
+//   const ts = new Date().toISOString().replace(/[:.]/g, "-");
+//   downloadFile(`chat-${ts}.txt`, text, "text/plain;charset=utf-8");
+// }
+async function handleExport() {
+  // Collect all citation IDs across assistant messages
+  const allIds = messages
+    .filter((m) => m.role !== "user")
+    // @ts-expect-error: assistant content shape
+    .flatMap((m: any) => m.content?.citations ?? []);
+
+  const citationDetails = await resolveCitationsForExport(allIds);
+
+  const md = formatAsMarkdownWithReferences(messages, citationDetails);
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
-  downloadFile(`chat-${ts}.txt`, text, "text/plain;charset=utf-8");
+  downloadFile(`chat-${ts}.md`, md, "text/markdown;charset=utf-8");
+}
+
+async function resolveCitationsForExport(allCitationIds: string[]) {
+  const { resources, fetchedChunks } = storeToRefs(useResourceStore());
+  const { get } = useApi(routes.resources.get.getChunk);
+
+  const uniqueIds = Array.from(new Set(allCitationIds));
+  const detailsById = new Map<string, { title: string; page?: number; content: string }>();
+
+  for (const id of uniqueIds) {
+    let chunk = fetchedChunks.value.find((c) => c._id === id) as Chunk | undefined;
+
+    if (!chunk) {
+      const resp = await get<Chunk>({ routeParams: [id] });
+      if (!resp) continue;
+      chunk = resp.data;
+      fetchedChunks.value.push(chunk);
+    }
+
+    const title = resources.value.find((r) => r._id === chunk.resource)?.title ?? "Untitled";
+    // @ts-expect-error: page_number exists for PDF chunks
+    const page = (chunk as any).page_number as number | undefined;
+
+    detailsById.set(id, { title, page, content: chunk.content });
+  }
+
+  return detailsById;
 }
 
 
