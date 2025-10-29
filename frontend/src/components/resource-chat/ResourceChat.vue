@@ -11,6 +11,7 @@ import { useResourceStore } from "@/stores/resource-store";
 import WelcomeScreen from "./WelcomeScreen.vue";
 import { storeToRefs } from "pinia";
 import type { Chunk } from "@/types/api";
+import { useSessionStore } from "@/stores/session-store";
 
 const messages = reactive<Message[]>([]);
 
@@ -22,6 +23,8 @@ const { selectedResourceIds } = storeToRefs(resourceStore);
 const streaming = ref(false);
 
 const messageList = ref();
+
+const BASE_URL = import.meta.env.VITE_API_URL
 
 const streamToMessage = async (stream: ReadableStream) => {
   const reader = stream.getReader();
@@ -151,6 +154,23 @@ function downloadFile(filename: string, content: string, mime: string) {
 //   }
 // }
 
+async function fetchChunkSilently<T>(urlPath: string): Promise<T | null> {
+  try {
+    const sessionStore = useSessionStore();
+    const token = sessionStore.tokens?.access_token;
+    const res = await fetch(`${BASE_URL}${urlPath}`, {
+      method: "GET",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 async function handleExport() {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
 
@@ -170,7 +190,6 @@ async function handleExport() {
 
 async function resolveCitationsForExport(allCitationIds: string[]) {
   const { resources, fetchedChunks } = storeToRefs(useResourceStore());
-  const { get } = useApi(routes.resources.get.getChunk);
 
   const uniqueIds = Array.from(new Set(allCitationIds));
   const detailsById = new Map<string, { title: string; page?: number; content: string }>();
@@ -179,9 +198,11 @@ async function resolveCitationsForExport(allCitationIds: string[]) {
     let chunk = fetchedChunks.value.find((c) => c._id === id) as Chunk | undefined;
 
     if (!chunk) {
-      const resp = await get<Chunk>({ routeParams: [id] });
-      if (!resp) continue;
-      chunk = resp.data;
+      // use the same route builder used elsewhere, but fetch silently
+      const path = routes.resources.get.getChunk(id);
+      const data = await fetchChunkSilently<Chunk>(path);
+      if (!data) continue;
+      chunk = data;
       fetchedChunks.value.push(chunk);
     }
 
@@ -194,7 +215,6 @@ async function resolveCitationsForExport(allCitationIds: string[]) {
 
   return detailsById;
 }
-
 
 onMounted(async () => clearChat({ data: undefined }));
 </script>
