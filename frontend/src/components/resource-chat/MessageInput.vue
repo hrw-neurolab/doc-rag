@@ -2,7 +2,12 @@
 import { InputText, Button, InputGroup, InputGroupAddon } from "primevue";
 import { ref } from "vue";
 
-const { disabled } = defineProps<{ disabled: boolean }>();
+// const { disabled } = defineProps<{ disabled: boolean }>();
+const { disabled, canExport, exporting = false } = defineProps<{
+  disabled: boolean;
+  canExport: boolean;
+  exporting?: boolean;
+}>();
 
 const messageInput = ref<string>("");
 const emit = defineEmits<{
@@ -32,6 +37,16 @@ const handleSubmit = () => {
       <InputGroupAddon>
         <Button :disabled="disabled" icon="pi pi-send" @click="handleSubmit" />
       </InputGroupAddon>
+
+      <InputGroupAddon>
+        <Button
+          :disabled="disabled || !canExport || exporting"
+          icon="pi pi-download"
+          aria-label="Export conversation"
+          @click="emit('export')"
+        />
+      </InputGroupAddon>
+      
     </InputGroup>
   </div>
 </template>
