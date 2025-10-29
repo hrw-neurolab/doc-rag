@@ -46,7 +46,7 @@ const handleSubmit = () => {
           @click="emit('export')"
         />
       </InputGroupAddon>
-      
+
     </InputGroup>
   </div>
 </template>
@@ -77,6 +77,7 @@ const handleSubmit = () => {
   right: 1rem;
   bottom: 0;
   background: var(--background-color);
+  pointer-events: none;
 }
 
 .bg::before {
