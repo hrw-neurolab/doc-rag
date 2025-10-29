@@ -94,21 +94,20 @@ function truncate(text: string, max = 300): string {
   if (text.length <= max) return text;
   return text.slice(0, max - 1) + "…";
 }
-
-function formatAsMarkdownWithReferences(
+function formatAsPlainTextWithReferences(
   msgs: Message[],
   citationDetails: Map<string, { title: string; page?: number; content: string }>
 ): string {
   const parts: string[] = [];
   for (const m of msgs) {
     if (m.role === "user") {
-      parts.push(`### User\n\n${m.content}`);
+      parts.push(`User:\n${m.content}`);
     } else {
-      parts.push(`### Assistant\n\n${m.content.text}`);
+      parts.push(`Assistant:\n${m.content.text}`);
 
       const ids = m.content.citations ?? [];
       if (ids.length > 0) {
-        parts.push(`\n#### References`);
+        parts.push(`\nReferences`);
         ids.forEach((id, idx) => {
           const num = idx + 1;
           const d = citationDetails.get(id);
@@ -117,7 +116,8 @@ function formatAsMarkdownWithReferences(
             return;
           }
           const pageSuffix = typeof d.page === "number" ? ` — Page ${d.page}` : "";
-          parts.push(`[${num}] ${d.title}${pageSuffix}\n\nExcerpt: "${truncate(d.content)}"`);
+          parts.push(`[${num}] ${d.title}${pageSuffix}`);
+          parts.push(`Excerpt: "${truncate(d.content)}"`);
         });
       }
     }
@@ -135,24 +135,6 @@ function downloadFile(filename: string, content: string, mime: string) {
   a.click();
   URL.revokeObjectURL(url);
 }
-
-// async function handleExport() {
-//   const ts = new Date().toISOString().replace(/[:.]/g, "-");
-
-//   try {
-//     const allIds = messages
-//       .filter((m) => m.role !== "user")
-//       .flatMap((m: any) => m.content?.citations ?? []);
-
-//     const citationDetails = await resolveCitationsForExport(allIds);
-//     const md = formatAsMarkdownWithReferences(messages, citationDetails);
-//     downloadFile(`chat-${ts}.md`, md, "text/markdown;charset=utf-8");
-//   } catch (e) {
-//     // Fallback: export plain text so user still gets a file
-//     const txt = formatAsPlainText(messages);
-//     downloadFile(`chat-${ts}.txt`, txt, "text/plain;charset=utf-8");
-//   }
-// }
 
 async function fetchChunkSilently<T>(urlPath: string): Promise<T | null> {
   try {
@@ -174,18 +156,14 @@ async function fetchChunkSilently<T>(urlPath: string): Promise<T | null> {
 async function handleExport() {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
 
-  // Collect all citation IDs across assistant messages
   const allIds = messages
     .filter((m) => m.role !== "user")
     .flatMap((m: any) => m.content?.citations ?? []);
 
-  console.log("all citation ids", allIds);
-
   const citationDetails = await resolveCitationsForExport(allIds);
-  console.log("resolved citations size", citationDetails.size);
 
-  const md = formatAsMarkdownWithReferences(messages, citationDetails);
-  downloadFile(`chat-${ts}.md`, md, "text/markdown;charset=utf-8");
+  const txt = formatAsPlainTextWithReferences(messages, citationDetails);
+  downloadFile(`chat-${ts}.txt`, txt, "text/plain;charset=utf-8");
 }
 
 async function resolveCitationsForExport(allCitationIds: string[]) {
