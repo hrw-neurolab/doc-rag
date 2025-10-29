@@ -115,8 +115,14 @@ onMounted(async () => clearChat({ data: undefined }));
     />
     <WelcomeScreen v-else />
   </Transition>
+  <!-- <MessageInput
+    :disabled="streaming || loading || resourceStore.selectedResourceIds.size === 0"
+    @submit="handleSubmit"
+  /> -->
   <MessageInput
     :disabled="streaming || loading || resourceStore.selectedResourceIds.size === 0"
+    :can-export="messages.length > 0 && !streaming && !loading"
+    @export="handleExport"
     @submit="handleSubmit"
   />
 </template>

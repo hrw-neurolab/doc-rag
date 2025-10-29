@@ -12,6 +12,7 @@ const { disabled, canExport, exporting = false } = defineProps<{
 const messageInput = ref<string>("");
 const emit = defineEmits<{
   submit: [message: string];
+  export: [];
 }>();
 
 const handleSubmit = () => {
@@ -77,7 +78,6 @@ const handleSubmit = () => {
   right: 1rem;
   bottom: 0;
   background: var(--background-color);
-  pointer-events: none;
 }
 
 .bg::before {
