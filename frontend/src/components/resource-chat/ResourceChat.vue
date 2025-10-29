@@ -138,18 +138,35 @@ function downloadFile(filename: string, content: string, mime: string) {
 //   const ts = new Date().toISOString().replace(/[:.]/g, "-");
 //   downloadFile(`chat-${ts}.txt`, text, "text/plain;charset=utf-8");
 // }
+// async function handleExport() {
+//   // Collect all citation IDs across assistant messages
+//   const allIds = messages
+//     .filter((m) => m.role !== "user")
+//     // @ts-expect-error: assistant content shape
+//     .flatMap((m: any) => m.content?.citations ?? []);
+
+//   const citationDetails = await resolveCitationsForExport(allIds);
+
+//   const md = formatAsMarkdownWithReferences(messages, citationDetails);
+//   const ts = new Date().toISOString().replace(/[:.]/g, "-");
+//   downloadFile(`chat-${ts}.md`, md, "text/markdown;charset=utf-8");
+// }
 async function handleExport() {
-  // Collect all citation IDs across assistant messages
-  const allIds = messages
-    .filter((m) => m.role !== "user")
-    // @ts-expect-error: assistant content shape
-    .flatMap((m: any) => m.content?.citations ?? []);
-
-  const citationDetails = await resolveCitationsForExport(allIds);
-
-  const md = formatAsMarkdownWithReferences(messages, citationDetails);
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
-  downloadFile(`chat-${ts}.md`, md, "text/markdown;charset=utf-8");
+
+  try {
+    const allIds = messages
+      .filter((m) => m.role !== "user")
+      .flatMap((m: any) => m.content?.citations ?? []);
+
+    const citationDetails = await resolveCitationsForExport(allIds);
+    const md = formatAsMarkdownWithReferences(messages, citationDetails);
+    downloadFile(`chat-${ts}.md`, md, "text/markdown;charset=utf-8");
+  } catch (e) {
+    // Fallback: export plain text so user still gets a file
+    const txt = formatAsPlainText(messages);
+    downloadFile(`chat-${ts}.txt`, txt, "text/plain;charset=utf-8");
+  }
 }
 
 async function resolveCitationsForExport(allCitationIds: string[]) {
