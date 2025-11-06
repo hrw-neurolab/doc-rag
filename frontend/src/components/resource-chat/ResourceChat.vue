@@ -94,6 +94,7 @@ function truncate(text: string, max = 300): string {
   if (text.length <= max) return text;
   return text.slice(0, max - 1) + "…";
 }
+
 function formatAsPlainTextWithReferences(
   msgs: Message[],
   citationDetails: Map<string, { title: string; page?: number; content: string }>
@@ -115,7 +116,7 @@ function formatAsPlainTextWithReferences(
             parts.push(`[${num}] (unavailable)`);
             return;
           }
-          const pageSuffix = typeof d.page === "number" ? ` — Page ${d.page}` : "";
+          const pageSuffix = typeof d.page === "number" ? ` — Page ${d.page + 1}` : "";
           parts.push(`[${num}] ${d.title}${pageSuffix}`);
           parts.push(`Excerpt: "${truncate(d.content)}"`);
         });
