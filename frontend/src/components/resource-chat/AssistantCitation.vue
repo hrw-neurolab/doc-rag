@@ -89,7 +89,7 @@ onMounted(getHoverContent);
         @mouseleave="hoveringPopover = false; scheduleHide()"
       >
         <h3>{{ hoverContent.title }}</h3>
-        <small v-if="hoverContent.page !== undefined">Page {{ hoverContent.page + 1 }}</small>
+        <small v-if="hoverContent.page !== undefined">Page {{ hoverContent.page }}</small>
         <Divider style="margin-top: 0.5rem; margin-bottom: 0.5rem" />
         <p>[...] {{ hoverContent.content }} [...]</p>
       </div>
