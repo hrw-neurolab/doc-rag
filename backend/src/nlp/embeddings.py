@@ -1,4 +1,7 @@
+import base64
 import io
+import gzip
+import json
 import pandas as pd
 from beanie import PydanticObjectId
 from pymongo.operations import SearchIndexModel
@@ -65,17 +68,17 @@ __TEXT_CLEANER = TextCleaner(
 
 
 def html_to_markdown(html_str: str) -> str:
-    """Converts an HTML table string to a clean Markdown table."""
+    """Converts one or multiple HTML table strings to clean Markdown."""
     try:
-        # Use pandas to read the HTML. It returns a list of DataFrames.
+        # pd.read_html returns a list of all tables found in the string
         dfs = pd.read_html(io.StringIO(html_str))
         if not dfs:
-            return html_str # Fallback to HTML if no table found
+            return ""
         
-        # Convert the first DataFrame to Markdown
-        return dfs[0].to_markdown(index=False)
-    except Exception:
-        # If the HTML is too broken, return the original text to avoid losing data
+        # Convert every discovered table to markdown and join them
+        return "\n\n".join([df.to_markdown(index=False) for df in dfs])
+    except Exception as e:
+        # Fallback to a simpler cleaning if pandas fails
         return html_str
 
 
@@ -239,53 +242,96 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         # print("\n\n\n\n\n", chunk.page_content, "\n\n\n\n\n")
         
         
+    # for chunk in chunks:
+    #     # 1. Page Metadata
+    #     current_page = chunk.metadata.get("page_number", 1)
+    #     chunk.metadata["page"] = current_page
+    #     if current_page > max_page:
+    #         max_page = current_page
+
+    #     # 2. Extract and Format Content
+    #     # We check for 'orig_elements' to rebuild the chunk correctly.
+    #     # This handles the 'CompositeElement' issue where headers and tables are mixed.
+    #     orig_elements = chunk.metadata.get("orig_elements")
+        
+    #     if isinstance(orig_elements, list):
+    #         new_content_parts = []
+    #         for elem in orig_elements:
+
+    #             print("\n\n\n\n\n", elem)
+    #             # Safely handle if elem is a dict (standard for LangChain) or an object
+    #             is_dict = isinstance(elem, dict)
+                
+    #             # Extract category and metadata safely
+    #             category = elem.get("type") if is_dict else getattr(elem, "category", None)
+    #             el_metadata = elem.get("metadata", {}) if is_dict else getattr(elem, "metadata", {})
+    #             el_text = elem.get("text", "") if is_dict else getattr(elem, "text", "")
+
+    #             if category == "Table" and "text_as_html" in el_metadata:
+    #                 # Convert this specific part to Markdown
+    #                 markdown_table = html_to_markdown(el_metadata["text_as_html"])
+    #                 new_content_parts.append(markdown_table)
+    #             else:
+    #                 # Clean the plain text part
+    #                 cleaned_text = __TEXT_CLEANER.clean_chunk_text(el_text)
+    #                 if cleaned_text:
+    #                     new_content_parts.append(cleaned_text)
+            
+    #         # Re-join the parts. Markdown tables need clear double-newlines to render.
+    #         chunk.page_content = "\n\n".join(new_content_parts)
+
+    #     # Fallback: If no orig_elements, but the top-level chunk is a Table
+    #     elif chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
+    #         chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
+        
+    #     else:
+    #         # Fallback: Just clean the existing page_content
+    #         chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
+
+    # return chunks, max_page
     for chunk in chunks:
-        # 1. Page Metadata
         current_page = chunk.metadata.get("page_number", 1)
         chunk.metadata["page"] = current_page
-        if current_page > max_page:
-            max_page = current_page
+        max_page = max(max_page, current_page)
 
-        # 2. Extract and Format Content
-        # We check for 'orig_elements' to rebuild the chunk correctly.
-        # This handles the 'CompositeElement' issue where headers and tables are mixed.
-        orig_elements = chunk.metadata.get("orig_elements")
+        # 1. Check for compressed 'orig_elements'
+        orig_elements_raw = chunk.metadata.get("orig_elements")
         
-        if isinstance(orig_elements, list):
-            new_content_parts = []
-            for elem in orig_elements:
-
-                print("\n\n\n\n\n", elem)
-                # Safely handle if elem is a dict (standard for LangChain) or an object
-                is_dict = isinstance(elem, dict)
+        if isinstance(orig_elements_raw, str) and len(orig_elements_raw) > 0:
+            try:
+                # DECOMPRESS: Unstructured uses Gzip + Base64 for serialization
+                decoded = gzip.decompress(base64.b64decode(orig_elements_raw))
+                elements_list = json.loads(decoded)
                 
-                # Extract category and metadata safely
-                category = elem.get("type") if is_dict else getattr(elem, "category", None)
-                el_metadata = elem.get("metadata", {}) if is_dict else getattr(elem, "metadata", {})
-                el_text = elem.get("text", "") if is_dict else getattr(elem, "text", "")
+                reconstructed_parts = []
+                for el in elements_list:
+                    # 'el' is now a dictionary
+                    category = el.get("type")
+                    text = el.get("text", "")
+                    el_metadata = el.get("metadata", {})
+                    
+                    if category == "Table" and "text_as_html" in el_metadata:
+                        # Convert table to markdown
+                        reconstructed_parts.append(html_to_markdown(el_metadata["text_as_html"]))
+                    else:
+                        # Clean normal text lines using your TextCleaner
+                        cleaned_text = __TEXT_CLEANER.clean_chunk_text(text)
+                        if cleaned_text:
+                            reconstructed_parts.append(cleaned_text)
+                
+                chunk.page_content = "\n\n".join(reconstructed_parts)
+                continue # Move to next chunk
+                
+            except Exception as e:
+                print(f"Decompression failed: {e}")
+                # If decompression fails, we fall through to standard cleaning
 
-                if category == "Table" and "text_as_html" in el_metadata:
-                    # Convert this specific part to Markdown
-                    markdown_table = html_to_markdown(el_metadata["text_as_html"])
-                    new_content_parts.append(markdown_table)
-                else:
-                    # Clean the plain text part
-                    cleaned_text = __TEXT_CLEANER.clean_chunk_text(el_text)
-                    if cleaned_text:
-                        new_content_parts.append(cleaned_text)
-            
-            # Re-join the parts. Markdown tables need clear double-newlines to render.
-            chunk.page_content = "\n\n".join(new_content_parts)
-
-        # Fallback: If no orig_elements, but the top-level chunk is a Table
-        elif chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
+        # 2. Fallback: Top-level Table check
+        if chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
             chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
-        
         else:
-            # Fallback: Just clean the existing page_content
+            # 3. Fallback: Standard text cleaning
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
-
-    return chunks, max_page
 
 
 async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
