@@ -296,8 +296,10 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
 
         # 1. Check for compressed 'orig_elements'
         orig_elements_raw = chunk.metadata.get("orig_elements")
+        print(orig_elements_raw)
         
         if isinstance(orig_elements_raw, str) and len(orig_elements_raw) > 0:
+            print("\n\n\n\n\n\n1111111\n\n\n\n\n")
             try:
                 # DECOMPRESS: Unstructured uses Gzip + Base64 for serialization
                 decoded = gzip.decompress(base64.b64decode(orig_elements_raw))
@@ -323,14 +325,17 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                 continue # Move to next chunk
                 
             except Exception as e:
+                print("\n\n\n\n\n\n-----------------\n\n\n\n\n")
                 print(f"Decompression failed: {e}")
                 # If decompression fails, we fall through to standard cleaning
 
         # 2. Fallback: Top-level Table check
         if chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
+            print("\n\n\n\n\n\n222222\n\n\n\n\n")
             chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
         else:
             # 3. Fallback: Standard text cleaning
+            print("\n\n\n\n\n\n333333\n\n\n\n\n")
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
 
     return chunks, max_page
