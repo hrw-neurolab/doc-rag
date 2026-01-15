@@ -181,7 +181,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
             detail=f"Failed to process PDF with Unstructured: {str(e)}",
         )
 
-    if not elements:
+    if not chunks:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="The PDF file is empty or could not be loaded.",
@@ -205,19 +205,17 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
     return chunks, max_page
 
 
-for chunk in chunks:
-        # 1. Page Metadata
-        current_page = chunk.metadata.get("page_number", 1)
-        chunk.metadata["page"] = current_page
-        if current_page > max_page:
-            max_page = current_page
-
-        # 2. Table Protection
-        # When chunking "by_title", if a chunk contains a Table, 
-        # Unstructured often includes the HTML in the metadata of the chunk.
-        if "text_as_html" in chunk.metadata:
-            chunk.page_content = chunk.metadata["text_as_html"]
-            
+async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
+    contents = []
+    for chunk in raw_chunks:
+        category = chunk.metadata.get("category", "text")
+        page = chunk.metadata.get("page", "?")
+        
+        # Help the LLM identify tables during retrieval
+        prefix = f"[Source: Page {page}, Type: {category}]"
+        contents.append(f"{prefix}\n{chunk.page_content}")
+        
+    return await EMBEDDING_CLIENT.aembed_documents(contents)
 
 # async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
 #     """Create embedding vectors for the raw chunks.
