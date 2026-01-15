@@ -116,7 +116,7 @@ function formatAsPlainTextWithReferences(
             parts.push(`[${num}] (unavailable)`);
             return;
           }
-          const pageSuffix = typeof d.page === "number" ? ` — Page ${d.page + 1}` : "";
+          const pageSuffix = typeof d.page === "number" ? ` — Page ${d.page}` : "";
           parts.push(`[${num}] ${d.title}${pageSuffix}`);
           parts.push(`Excerpt: "${truncate(d.content)}"`);
         });
