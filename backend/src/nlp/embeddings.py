@@ -215,24 +215,48 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         if current_page > max_page:
             max_page = current_page
 
-        category = chunk.metadata.get("category", "Text")
+        # category = chunk.metadata.get("category", "Text")
 
-        # 2. Table Protection
-        if category == "Table":
-            # STRATEGY A: Handle Tables
-            # Check for HTML content first
-            if "text_as_html" in chunk.metadata:
-                markdown_table = html_to_markdown(chunk.metadata["text_as_html"])
-                chunk.page_content = markdown_table
-            else:
-                # Fallback: If table has no HTML structure, just clean the text
-                chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
+        # # 2. Table Protection
+        # if category == "Table":
+        #     # STRATEGY A: Handle Tables
+        #     # Check for HTML content first
+        #     if "text_as_html" in chunk.metadata:
+        #         markdown_table = html_to_markdown(chunk.metadata["text_as_html"])
+        #         chunk.page_content = markdown_table
+        #     else:
+        #         # Fallback: If table has no HTML structure, just clean the text
+        #         chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
                 
+        # else:
+        #     # STRATEGY B: Handle Text/Titles
+        #     # Apply your sophisticated TextCleaner logic here
+        #     chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
+        if "orig_elements" in chunk.metadata:
+            parts = []
+            for elem in chunk.metadata["orig_elements"]:
+                # If the sub-element is a Table, convert its HTML to Markdown
+                if elem.metadata.get("category") == "Table" and elem.metadata.get("text_as_html"):
+                    md_table = html_to_markdown(elem.metadata["text_as_html"])
+                    parts.append(md_table)
+                # Otherwise, just clean the text
+                else:
+                    # 'text' is the attribute for the content in orig_elements objects
+                    text_content = getattr(elem, "text", "") 
+                    if text_content:
+                        parts.append(__TEXT_CLEANER.clean_chunk_text(text_content))
+            
+            # Rebuild the page content from the processed parts
+            chunk.page_content = "\n\n".join(parts)
+            
+        # 3. Fallback for single elements (if not composite)
+        elif chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
+            chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
+            
         else:
-            # STRATEGY B: Handle Text/Titles
-            # Apply your sophisticated TextCleaner logic here
+            # Standard Text Cleaning
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
-
+            
     return chunks, max_page
 
 
