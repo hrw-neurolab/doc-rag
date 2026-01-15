@@ -1,3 +1,5 @@
+import io
+import pandas as pd
 from beanie import PydanticObjectId
 from pymongo.operations import SearchIndexModel
 from pymongo.errors import OperationFailure
@@ -60,6 +62,21 @@ __TEXT_CLEANER = TextCleaner(
 #         return chunks
 
 # __PDF_SPLITTER = SentenceTextSplitter(sentences_per_chunk=12, overlap=2)
+
+
+def html_to_markdown(html_str: str) -> str:
+    """Converts an HTML table string to a clean Markdown table."""
+    try:
+        # Use pandas to read the HTML. It returns a list of DataFrames.
+        dfs = pd.read_html(io.StringIO(html_str))
+        if not dfs:
+            return html_str # Fallback to HTML if no table found
+        
+        # Convert the first DataFrame to Markdown
+        return dfs[0].to_markdown(index=False)
+    except Exception:
+        # If the HTML is too broken, return the original text to avoid losing data
+        return html_str
 
 
 async def create_search_index():
@@ -162,7 +179,8 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         file_path=file_path,
         strategy="hi_res",
         partition_via_api=False,
-        infer_table_structure=True,  # Critical for keeping tables together
+        infer_table_structure=True,   # Critical for keeping tables together
+        languages=["deu", "eng"],
         
         # --- THE FIX: NATIVE CHUNKING ---
         chunking_strategy="by_title", # Groups elements logically under headings
@@ -193,14 +211,20 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         # 1. Page Metadata
         current_page = chunk.metadata.get("page_number", 1)
         chunk.metadata["page"] = current_page
+        category = chunk.metadata.get("category")
+
         if current_page > max_page:
             max_page = current_page
 
         # 2. Table Protection
         # When chunking "by_title", if a chunk contains a Table, 
         # Unstructured often includes the HTML in the metadata of the chunk.
-        if "text_as_html" in chunk.metadata:
-            chunk.page_content = chunk.metadata["text_as_html"]
+        if category == "Table" and "text_as_html" in chunk.metadata:
+            chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
+        # if "text_as_html" in chunk.metadata:
+        #     chunk.page_content = chunk.metadata["text_as_html"]
+        else:
+            pass
 
     return chunks, max_page
 
