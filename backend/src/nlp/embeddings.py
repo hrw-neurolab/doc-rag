@@ -1,13 +1,12 @@
 from beanie import PydanticObjectId
-from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo.operations import SearchIndexModel
 from pymongo.errors import OperationFailure
-from langchain_community.document_loaders import PyPDFLoader
+# from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_mongodb.pipelines import vector_search_stage
+from langchain_text_splitters import TokenTextSplitter
+from langchain_unstructured import UnstructuredLoader
 from fastapi import HTTPException, status
-from langchain_text_splitters import RecursiveCharacterTextSplitter, TokenTextSplitter # TextSplitter
-# from nltk.tokenize import sent_tokenize
 from typing import Union, List, Optional
 
 # import nltk
@@ -117,8 +116,40 @@ async def create_search_index():
     await collection.create_search_index(search_index_model)
 
 
+# async def split_pdf(file_path: str) -> tuple[list[Document], int]:
+#     """Create raw chunks for a PDF file.
+
+#     Args:
+#         file_path (str): Path to the PDF file.
+
+#     Returns:
+#         tuple[list[Document], int]: A tuple containing the raw chunks and the total number of pages.
+#     """
+#     loader = PyPDFLoader(file_path)
+#     pages = await loader.aload()
+
+
+#     # Clean page contents and ensure page metadata
+#     raw_page_texts = [p.page_content for p in pages]
+#     cleaned_texts = __TEXT_CLEANER.clean_pages(raw_page_texts)
+#     for i, p in enumerate(pages):
+#         p.page_content = cleaned_texts[i]
+#         # ensure 1-based page number is present
+#         p.metadata["page"] = p.metadata.get("page", i + 1)
+
+#     if not pages:
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="The PDF file is empty or could not be loaded.",
+#         )
+
+#     total_pages = pages[0].metadata.get("total_pages", 0)
+#     raw_chunks = __PDF_SPLITTER.split_documents(pages)
+
+#     return raw_chunks, total_pages
+
 async def split_pdf(file_path: str) -> tuple[list[Document], int]:
-    """Create raw chunks for a PDF file.
+    """Create raw chunks for a PDF file using the modern langchain_unstructured loader.
 
     Args:
         file_path (str): Path to the PDF file.
@@ -126,28 +157,67 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
     Returns:
         tuple[list[Document], int]: A tuple containing the raw chunks and the total number of pages.
     """
-    loader = PyPDFLoader(file_path)
-    pages = await loader.aload()
+    # Initialize the modern UnstructuredLoader
+    # partition_via_api=False ensures we use the local installed library (unstructured)
+    loader = UnstructuredLoader(
+        file_path=file_path,
+        strategy="fast",
+        mode="elements",             # Returns individual elements (Title, Table, Text)
+        partition_via_api=False,     # STRICTLY force local processing
+        # Arguments below are passed to the local partition function
+        include_page_breaks=False,   
+        infer_table_structure=True,  
+    )
 
+    try:
+        # langchain_unstructured supports async aload natively
+        elements = await loader.aload()
+    except Exception as e:
+        # Catch errors if local dependencies (tesseract/poppler) are missing
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process PDF with Unstructured: {str(e)}",
+        )
 
-    # Clean page contents and ensure page metadata
-    raw_page_texts = [p.page_content for p in pages]
-    cleaned_texts = __TEXT_CLEANER.clean_pages(raw_page_texts)
-    for i, p in enumerate(pages):
-        p.page_content = cleaned_texts[i]
-        # ensure 1-based page number is present
-        p.metadata["page"] = p.metadata.get("page", i + 1)
-
-    if not pages:
+    if not elements:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="The PDF file is empty or could not be loaded.",
         )
 
-    total_pages = pages[0].metadata.get("total_pages", 0)
-    raw_chunks = __PDF_SPLITTER.split_documents(pages)
+    max_page = 0
+    
+    # Pre-processing loop
+    for doc in elements:
+        # 1. Normalize Page Numbers
+        # Unstructured metadata usually contains 'page_number'
+        current_page = doc.metadata.get("page_number", 1)
+        doc.metadata["page"] = current_page
+        if current_page > max_page:
+            max_page = current_page
 
-    return raw_chunks, total_pages
+        # 2. Optimize Table Content (HTML Injection)
+        # The logic remains the same: swap messy text for structured HTML
+        if doc.metadata.get("category") == "Table":
+            # In the new loader, this HTML is sometimes in 'text_as_html' 
+            # or strictly in metadata['orig_elements'] depending on version. 
+            # 'text_as_html' is the standard top-level metadata key.
+            if "text_as_html" in doc.metadata:
+                doc.page_content = doc.metadata["text_as_html"]
+
+    # --- CLEANING WARNING ---
+    # With mode="elements", 'page_content' is just a single paragraph or table.
+    # Cleaning functions designed for full pages might be too aggressive here.
+    raw_element_texts = [d.page_content for d in elements]
+    cleaned_texts = __TEXT_CLEANER.clean_pages(raw_element_texts)
+    
+    for i, doc in enumerate(elements):
+        doc.page_content = cleaned_texts[i]
+
+    # Pass elements to your splitter
+    raw_chunks = __PDF_SPLITTER.split_documents(elements)
+
+    return raw_chunks, max_page
 
 
 async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
