@@ -111,6 +111,12 @@ class TextCleaner:
         return '\n\n'.join(p.strip() for p in paragraphs)
 
 
+    def clean_chunk_text(self, text: str) -> str:
+        cleaned = self._fix_hyphenation(text)
+        cleaned = self._normalize_spacing(cleaned)
+        return cleaned
+
+
     def clean_pages(self, pages: List[str]) -> List[str]:
         """Clean a list of page texts."""
         headers = self._detect_running_lines(pages, "head")

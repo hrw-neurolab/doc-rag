@@ -181,6 +181,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         partition_via_api=False,
         infer_table_structure=True,   # Critical for keeping tables together
         languages=["deu", "eng"],
+        skip_infer_table_types=["Header", "Footer"],
         
         # --- THE FIX: NATIVE CHUNKING ---
         chunking_strategy="by_title", # Groups elements logically under headings
@@ -211,20 +212,26 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         # 1. Page Metadata
         current_page = chunk.metadata.get("page_number", 1)
         chunk.metadata["page"] = current_page
-        category = chunk.metadata.get("category")
-
         if current_page > max_page:
             max_page = current_page
 
+        category = chunk.metadata.get("category", "Text")
+
         # 2. Table Protection
-        # When chunking "by_title", if a chunk contains a Table, 
-        # Unstructured often includes the HTML in the metadata of the chunk.
-        if category == "Table" and "text_as_html" in chunk.metadata:
-            chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
-        # if "text_as_html" in chunk.metadata:
-        #     chunk.page_content = chunk.metadata["text_as_html"]
+        if category == "Table":
+            # STRATEGY A: Handle Tables
+            # Check for HTML content first
+            if "text_as_html" in chunk.metadata:
+                markdown_table = html_to_markdown(chunk.metadata["text_as_html"])
+                chunk.page_content = markdown_table
+            else:
+                # Fallback: If table has no HTML structure, just clean the text
+                chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
+                
         else:
-            pass
+            # STRATEGY B: Handle Text/Titles
+            # Apply your sophisticated TextCleaner logic here
+            chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
 
     return chunks, max_page
 
