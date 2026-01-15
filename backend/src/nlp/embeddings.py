@@ -180,17 +180,20 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
     # Initialize the modern UnstructuredLoader
     loader = UnstructuredLoader(
         file_path=file_path,
-        strategy="hi_res",
+        strategy="auto",
         partition_via_api=False,
         infer_table_structure=True,   # Critical for keeping tables together
         languages=["deu", "eng"],
         skip_infer_table_types=["Header", "Footer"],
         
         # --- THE FIX: NATIVE CHUNKING ---
-        chunking_strategy="by_title", # Groups elements logically under headings
-        max_characters=2000,          # Target size for each chunk
+        chunking_strategy="by_title",   # Groups elements logically under headings
+        max_characters=2000,            # Target size for each chunk
         combine_text_under_n_chars=500, # Merges small snippets into the next chunk
-        multipage_sections=True,      # Allows chunks to span across pages if logical
+        multipage_sections=True,        # Allows chunks to span across pages if logical
+        multiprocessing_context="fork", # or "spawn" depending on OS
+        max_partitionbatch_size=5,      # Process in batches of 5 pages
+        workers=4,                      # Use 4 CPU cores
     )
 
     try:
