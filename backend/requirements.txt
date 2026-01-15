@@ -6,9 +6,10 @@ pydantic-extra-types==2.10.6
 pydantic-settings==2.11.0
 pyjwt==2.10.1
 passlib[bcrypt]==1.7.4
-langchain_community==0.3.31
-langchain_ollama==0.3.10
+langchain-community==0.3.31
+langchain-ollama==0.3.10
 langchain-mongodb==0.7.0
+langchain-unstructured==1.0.1
 pypdf==6.1.1
 motor==3.7.1
 nltk==3.9.2
