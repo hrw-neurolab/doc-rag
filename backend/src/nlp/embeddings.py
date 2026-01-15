@@ -1,6 +1,6 @@
 import base64
 import io
-import gzip
+import zlib
 import json
 import pandas as pd
 from beanie import PydanticObjectId
@@ -70,15 +70,15 @@ __TEXT_CLEANER = TextCleaner(
 def html_to_markdown(html_str: str) -> str:
     """Converts one or multiple HTML table strings to clean Markdown."""
     try:
-        # pd.read_html returns a list of all tables found in the string
+        # pd.read_html returns a list of DataFrames for all <table> tags found
         dfs = pd.read_html(io.StringIO(html_str))
         if not dfs:
             return ""
         
-        # Convert every discovered table to markdown and join them
+        # Join multiple tables with double newlines
         return "\n\n".join([df.to_markdown(index=False) for df in dfs])
-    except Exception as e:
-        # Fallback to a simpler cleaning if pandas fails
+    except Exception:
+        # If conversion fails, return the raw text to avoid losing data
         return html_str
 
 
@@ -302,8 +302,9 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
             print("\n\n\n\n\n\n1111111\n\n\n\n\n")
             try:
                 # DECOMPRESS: Unstructured uses Gzip + Base64 for serialization
-                decoded = gzip.decompress(base64.b64decode(orig_elements_raw))
-                elements_list = json.loads(decoded)
+                decoded_bytes = base64.b64decode(orig_elements_raw)
+                decompressed_bytes = zlib.decompress(decoded_bytes)
+                elements_list = json.loads(decompressed_bytes)
                 
                 reconstructed_parts = []
                 for el in elements_list:
@@ -322,6 +323,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                             reconstructed_parts.append(cleaned_text)
                 
                 chunk.page_content = "\n\n".join(reconstructed_parts)
+                print(chunk.page_content)
                 continue # Move to next chunk
                 
             except Exception as e:
@@ -337,6 +339,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
             # 3. Fallback: Standard text cleaning
             print("\n\n\n\n\n\n333333\n\n\n\n\n")
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
+            print(chunk.page_content)
 
     return chunks, max_page
 
