@@ -333,6 +333,8 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
             # 3. Fallback: Standard text cleaning
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
 
+    return chunks, max_page
+
 
 async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
     contents = []
