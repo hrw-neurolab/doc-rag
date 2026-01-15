@@ -208,37 +208,6 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
 
     max_page = 0
     
-    for chunk in chunks:
-        # 1. Page Metadata
-        current_page = chunk.metadata.get("page_number", 1)
-        chunk.metadata["page"] = current_page
-        if current_page > max_page:
-            max_page = current_page
-
-        category = chunk.metadata.get("category", "Text")
-        print("\n\n\n\n\n", chunk.metadata, "\n\n\n\n\n")
-        print("\n\n\n\n\n", category, "\n\n\n\n\n")
-        # 2. Table Protection
-        if category == "Table":
-            # STRATEGY A: Handle Tables
-            # Check for HTML content first
-            if "text_as_html" in chunk.metadata:
-                chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
-            else:
-                # Fallback: If table has no HTML structure, just clean the text
-                chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
-        
-        if category != "text" and "text_as_html" in chunk.metadata:
-            chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
-            # markdown = html_to_markdown(chunk.metadata["text_as_html"])
-        else:
-            # STRATEGY B: Handle Text/Titles
-            # Apply your sophisticated TextCleaner logic here
-            chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
-        
-        print("\n\n\n\n\n", chunk.page_content, "\n\n\n\n\n")
-        
-        
     # for chunk in chunks:
     #     # 1. Page Metadata
     #     current_page = chunk.metadata.get("page_number", 1)
@@ -246,42 +215,75 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
     #     if current_page > max_page:
     #         max_page = current_page
 
-    #     # 2. Extract and Format Content
-    #     # We check for 'orig_elements' to rebuild the chunk correctly.
-    #     # This handles the 'CompositeElement' issue where headers and tables are mixed.
-    #     orig_elements = chunk.metadata.get("orig_elements")
+    #     category = chunk.metadata.get("category", "Text")
+        # print("\n\n\n\n\n", chunk.metadata, "\n\n\n\n\n")
+        # print("\n\n\n\n\n", category, "\n\n\n\n\n")
+        # 2. Table Protection
+        # if category == "Table":
+        #     # STRATEGY A: Handle Tables
+        #     # Check for HTML content first
+        #     if "text_as_html" in chunk.metadata:
+        #         chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
+        #     else:
+        #         # Fallback: If table has no HTML structure, just clean the text
+        #         chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
         
-    #     if isinstance(orig_elements, list):
-    #         new_content_parts = []
-    #         for elem in orig_elements:
-    #             # Safely handle if elem is a dict (standard for LangChain) or an object
-    #             is_dict = isinstance(elem, dict)
+        # if category != "text" and "text_as_html" in chunk.metadata:
+        #     chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
+        #     # markdown = html_to_markdown(chunk.metadata["text_as_html"])
+        # else:
+        #     # STRATEGY B: Handle Text/Titles
+        #     # Apply your sophisticated TextCleaner logic here
+        #     chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
+        
+        # print("\n\n\n\n\n", chunk.page_content, "\n\n\n\n\n")
+        
+        
+    for chunk in chunks:
+        # 1. Page Metadata
+        current_page = chunk.metadata.get("page_number", 1)
+        chunk.metadata["page"] = current_page
+        if current_page > max_page:
+            max_page = current_page
+
+        # 2. Extract and Format Content
+        # We check for 'orig_elements' to rebuild the chunk correctly.
+        # This handles the 'CompositeElement' issue where headers and tables are mixed.
+        orig_elements = chunk.metadata.get("orig_elements")
+        
+        if isinstance(orig_elements, list):
+            new_content_parts = []
+            for elem in orig_elements:
+
+                print("\n\n\n\n\n", elem)
+                # Safely handle if elem is a dict (standard for LangChain) or an object
+                is_dict = isinstance(elem, dict)
                 
-    #             # Extract category and metadata safely
-    #             category = elem.get("type") if is_dict else getattr(elem, "category", None)
-    #             el_metadata = elem.get("metadata", {}) if is_dict else getattr(elem, "metadata", {})
-    #             el_text = elem.get("text", "") if is_dict else getattr(elem, "text", "")
+                # Extract category and metadata safely
+                category = elem.get("type") if is_dict else getattr(elem, "category", None)
+                el_metadata = elem.get("metadata", {}) if is_dict else getattr(elem, "metadata", {})
+                el_text = elem.get("text", "") if is_dict else getattr(elem, "text", "")
 
-    #             if category == "Table" and "text_as_html" in el_metadata:
-    #                 # Convert this specific part to Markdown
-    #                 markdown_table = html_to_markdown(el_metadata["text_as_html"])
-    #                 new_content_parts.append(markdown_table)
-    #             else:
-    #                 # Clean the plain text part
-    #                 cleaned_text = __TEXT_CLEANER.clean_chunk_text(el_text)
-    #                 if cleaned_text:
-    #                     new_content_parts.append(cleaned_text)
+                if category == "Table" and "text_as_html" in el_metadata:
+                    # Convert this specific part to Markdown
+                    markdown_table = html_to_markdown(el_metadata["text_as_html"])
+                    new_content_parts.append(markdown_table)
+                else:
+                    # Clean the plain text part
+                    cleaned_text = __TEXT_CLEANER.clean_chunk_text(el_text)
+                    if cleaned_text:
+                        new_content_parts.append(cleaned_text)
             
-    #         # Re-join the parts. Markdown tables need clear double-newlines to render.
-    #         chunk.page_content = "\n\n".join(new_content_parts)
+            # Re-join the parts. Markdown tables need clear double-newlines to render.
+            chunk.page_content = "\n\n".join(new_content_parts)
 
-    #     # Fallback: If no orig_elements, but the top-level chunk is a Table
-    #     elif chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
-    #         chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
+        # Fallback: If no orig_elements, but the top-level chunk is a Table
+        elif chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
+            chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
         
-    #     else:
-    #         # Fallback: Just clean the existing page_content
-    #         chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
+        else:
+            # Fallback: Just clean the existing page_content
+            chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
 
     return chunks, max_page
 

@@ -19,3 +19,6 @@ transformers==4.57.0
 wordfreq==3.1.1
 langdetect==1.0.9
 unstructured[pdf]==0.18.15
+tabulate==0.9.0
+lxml==5.2.2
+lxml_html_clean==0.4.2
