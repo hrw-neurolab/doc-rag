@@ -227,12 +227,16 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
             else:
                 # Fallback: If table has no HTML structure, just clean the text
                 chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
-                
+        
+        if category != "text" and "text_as_html" in chunk.metadata:
+            chunk.page_content = html_to_markdown(chunk.metadata["text_as_html"])
+            # markdown = html_to_markdown(chunk.metadata["text_as_html"])
         else:
             # STRATEGY B: Handle Text/Titles
             # Apply your sophisticated TextCleaner logic here
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
         
+        print("\n\n\n\n\n", chunk.page_content, "\n\n\n\n\n")
         
         
     # for chunk in chunks:
