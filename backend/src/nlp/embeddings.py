@@ -158,20 +158,22 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         tuple[list[Document], int]: A tuple containing the raw chunks and the total number of pages.
     """
     # Initialize the modern UnstructuredLoader
-    # partition_via_api=False ensures we use the local installed library (unstructured)
     loader = UnstructuredLoader(
         file_path=file_path,
-        strategy="fast",
-        mode="elements",             # Returns individual elements (Title, Table, Text)
-        partition_via_api=False,     # STRICTLY force local processing
-        # Arguments below are passed to the local partition function
-        include_page_breaks=False,   
-        infer_table_structure=True,  
+        strategy="hi_res",
+        partition_via_api=False,
+        infer_table_structure=True,  # Critical for keeping tables together
+        
+        # --- THE FIX: NATIVE CHUNKING ---
+        chunking_strategy="by_title", # Groups elements logically under headings
+        max_characters=2000,          # Target size for each chunk
+        combine_text_under_n_chars=500, # Merges small snippets into the next chunk
+        multipage_sections=True,      # Allows chunks to span across pages if logical
     )
 
     try:
         # langchain_unstructured supports async aload natively
-        elements = await loader.aload()
+        chunks = await loader.aload()
     except Exception as e:
         # Catch errors if local dependencies (tesseract/poppler) are missing
         raise HTTPException(
@@ -187,54 +189,51 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
 
     max_page = 0
     
-    # Pre-processing loop
-    for doc in elements:
-        # 1. Normalize Page Numbers
-        # Unstructured metadata usually contains 'page_number'
-        current_page = doc.metadata.get("page_number", 1)
-        doc.metadata["page"] = current_page
+    for chunk in chunks:
+        # 1. Page Metadata
+        current_page = chunk.metadata.get("page_number", 1)
+        chunk.metadata["page"] = current_page
         if current_page > max_page:
             max_page = current_page
 
-        # 2. Optimize Table Content (HTML Injection)
-        # The logic remains the same: swap messy text for structured HTML
-        if doc.metadata.get("category") == "Table":
-            # In the new loader, this HTML is sometimes in 'text_as_html' 
-            # or strictly in metadata['orig_elements'] depending on version. 
-            # 'text_as_html' is the standard top-level metadata key.
-            if "text_as_html" in doc.metadata:
-                doc.page_content = doc.metadata["text_as_html"]
+        # 2. Table Protection
+        # When chunking "by_title", if a chunk contains a Table, 
+        # Unstructured often includes the HTML in the metadata of the chunk.
+        if "text_as_html" in chunk.metadata:
+            chunk.page_content = chunk.metadata["text_as_html"]
 
-    # --- CLEANING WARNING ---
-    # With mode="elements", 'page_content' is just a single paragraph or table.
-    # Cleaning functions designed for full pages might be too aggressive here.
-    raw_element_texts = [d.page_content for d in elements]
-    cleaned_texts = __TEXT_CLEANER.clean_pages(raw_element_texts)
-    
-    for i, doc in enumerate(elements):
-        doc.page_content = cleaned_texts[i]
-
-    # Pass elements to your splitter
-    raw_chunks = __PDF_SPLITTER.split_documents(elements)
-
-    return raw_chunks, max_page
+    return chunks, max_page
 
 
-async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
-    """Create embedding vectors for the raw chunks.
+for chunk in chunks:
+        # 1. Page Metadata
+        current_page = chunk.metadata.get("page_number", 1)
+        chunk.metadata["page"] = current_page
+        if current_page > max_page:
+            max_page = current_page
 
-    Args:
-        raw_chunks (list[Document]): List of raw chunks from the PDF.
+        # 2. Table Protection
+        # When chunking "by_title", if a chunk contains a Table, 
+        # Unstructured often includes the HTML in the metadata of the chunk.
+        if "text_as_html" in chunk.metadata:
+            chunk.page_content = chunk.metadata["text_as_html"]
+            
 
-    Returns:
-        list[list[float]]: List of embedding vectors for each chunk.
-    """
-    contents = [
-        # chunk.page_content
-        f"title: {chunk.metadata.get('title', 'none')} | text: {chunk.page_content}"
-        for chunk in raw_chunks
-    ]
-    return await EMBEDDING_CLIENT.aembed_documents(contents)
+# async def embed_chunks(raw_chunks: list[Document]) -> list[list[float]]:
+#     """Create embedding vectors for the raw chunks.
+
+#     Args:
+#         raw_chunks (list[Document]): List of raw chunks from the PDF.
+
+#     Returns:
+#         list[list[float]]: List of embedding vectors for each chunk.
+#     """
+#     contents = [
+#         # chunk.page_content
+#         f"title: {chunk.metadata.get('title', 'none')} | text: {chunk.page_content}"
+#         for chunk in raw_chunks
+#     ]
+#     return await EMBEDDING_CLIENT.aembed_documents(contents)
 
 
 # async def similarity_search(
