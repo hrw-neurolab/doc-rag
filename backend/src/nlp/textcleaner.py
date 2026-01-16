@@ -111,8 +111,9 @@ class TextCleaner:
         return '\n\n'.join(p.strip() for p in paragraphs)
 
 
-    def clean_chunk_text(self, text: str) -> str:
-        cleaned = self._fix_hyphenation(text)
+    def clean_chunk_text(self, text: str, table: bool = False) -> str:
+        if not table:
+            cleaned = self._fix_hyphenation(text)
         cleaned = self._normalize_spacing(cleaned)
         return cleaned
 
