@@ -241,7 +241,8 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                     
                     if category == "Table" and "text_as_html" in el_metadata:
                         # Convert table to markdown
-                        reconstructed_parts.append(html_to_markdown(el_metadata["text_as_html"]))
+                        markdown = html_to_markdown(el_metadata["text_as_html"])
+                        reconstructed_parts.append(__TEXT_CLEANER.clean_chunk_text(markdown, table=True))
                     else:
                         # Clean normal text lines using your TextCleaner
                         cleaned_text = __TEXT_CLEANER.clean_chunk_text(text)
