@@ -242,6 +242,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                         # Convert table to markdown
                         markdown = html_to_markdown(el_metadata["text_as_html"])
                         # reconstructed_parts.append(__TEXT_CLEANER.clean_chunk_text(markdown, table=True))
+                        print("md---->", markdown)
                         reconstructed_parts.append(markdown)
                     else:
                         # Clean normal text lines using your TextCleaner
@@ -249,6 +250,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                         # cleaned_text = __TEXT_CLEANER.clean_chunk_text(text)
                         if text.strip():
                             reconstructed_parts.append(text)
+                        print("text---->", text)
                 
                 reconstructed_text = "\n".join(reconstructed_parts)
 
