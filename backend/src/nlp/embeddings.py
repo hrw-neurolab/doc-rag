@@ -180,7 +180,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
     # Initialize the modern UnstructuredLoader
     loader = UnstructuredLoader(
         file_path=file_path,
-        strategy="fast",
+        strategy="hi_res",
         partition_via_api=False,
         infer_table_structure=True,   # Critical for keeping tables together
         languages=["deu", "eng"],
