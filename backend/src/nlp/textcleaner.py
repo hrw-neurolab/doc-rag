@@ -58,29 +58,18 @@ class TextCleaner:
     #     text = re.sub(r"[ \t]+", " ", text)            # normalize spaces/tabs
     #     return text.strip()
     def _fix_hyphenation(self, text: str) -> str:
-        """Join fragmented lines, normalize whitespace and newlines."""
-        # 1. Join hard-hyphenated words
+        """Join layout fragments while preserving actual paragraphs."""
+        # 1. Join hard-hyphenated line breaks: "word-\nbreak" -> "wordbreak"
         text = re.sub(r"(\w+)-\n+(\w+)", r"\1\2", text)
         
-        # 2. CHANGE: Convert multiple newlines into a single newline temporarily
-        # to see if we should join them.
-        # We want to join lines if the 'paragraph' is actually just a short snippet.
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        # 2. Join lines if the previous line doesn't end in punctuation (. ! ?)
+        # This turns '366\n\nEUR' into '366 EUR'
+        text = re.sub(r"(?<![.!?])\n+", " ", text)
         
-        # 3. Join lines that are very short (likely attributes or broken sentences)
-        # If a line doesn't end in a sentence-ending punctuation, join it to the next.
-        fixed_text = ""
-        for i, line in enumerate(lines):
-            fixed_text += line
-            if i < len(lines) - 1:
-                # If line is short or doesn't end in [.!?], join with space
-                if len(line) < 40 or not re.search(r'[.!?]$', line):
-                    fixed_text += " "
-                else:
-                    fixed_text += "\n\n"
-                    
-        # 4. Final whitespace cleanup
-        text = re.sub(r"[ \t]+", " ", fixed_text)
+        # 3. Normalize: collapse multiple spaces and ensure remaining \n are double
+        text = re.sub(r" +", " ", text)
+        text = re.sub(r"\n+", "\n\n", text)
+        
         return text.strip()
 
 
