@@ -41,7 +41,7 @@ export type Resource = PdfResource | WebpageResource;
 
 export interface ResourceChatBody {
   query: string;
-  recource_ids?: string[];
+  resource_ids?: string[];
 }
 
 export interface BaseChunk {

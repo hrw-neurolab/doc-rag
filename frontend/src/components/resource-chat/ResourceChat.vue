@@ -66,7 +66,7 @@ const handleSubmit = async (text: string) => {
   await messageList.value?.scrollToBottom();
 
   const response = await sendMessage<ReadableStream, ResourceChatBody>({
-    data: { query: text, recource_ids: Array.from(selectedResourceIds.value) },
+    data: { query: text, resource_ids: Array.from(selectedResourceIds.value) },
     config: { responseType: "stream", adapter: "fetch" },
   });
 
