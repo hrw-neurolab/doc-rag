@@ -50,12 +50,37 @@ class TextCleaner:
         return " ".join(fixed_tokens)
 
 
+    # def _fix_hyphenation(self, text: str) -> str:
+    #     """Join hyphenated line breaks, normalize whitespace and newlines."""
+    #     text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", text)
+    #     text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)   # intra-paragraph
+    #     text = re.sub(r"\n{3,}", "\n\n", text)         # collapse 3+ newlines
+    #     text = re.sub(r"[ \t]+", " ", text)            # normalize spaces/tabs
+    #     return text.strip()
     def _fix_hyphenation(self, text: str) -> str:
-        """Join hyphenated line breaks, normalize whitespace and newlines."""
-        text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", text)
-        text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)   # intra-paragraph
-        text = re.sub(r"\n{3,}", "\n\n", text)         # collapse 3+ newlines
-        text = re.sub(r"[ \t]+", " ", text)            # normalize spaces/tabs
+        """Join fragmented lines, normalize whitespace and newlines."""
+        # 1. Join hard-hyphenated words
+        text = re.sub(r"(\w+)-\n+(\w+)", r"\1\2", text)
+        
+        # 2. CHANGE: Convert multiple newlines into a single newline temporarily
+        # to see if we should join them.
+        # We want to join lines if the 'paragraph' is actually just a short snippet.
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        
+        # 3. Join lines that are very short (likely attributes or broken sentences)
+        # If a line doesn't end in a sentence-ending punctuation, join it to the next.
+        fixed_text = ""
+        for i, line in enumerate(lines):
+            fixed_text += line
+            if i < len(lines) - 1:
+                # If line is short or doesn't end in [.!?], join with space
+                if len(line) < 40 or not re.search(r'[.!?]$', line):
+                    fixed_text += " "
+                else:
+                    fixed_text += "\n\n"
+                    
+        # 4. Final whitespace cleanup
+        text = re.sub(r"[ \t]+", " ", fixed_text)
         return text.strip()
 
 
