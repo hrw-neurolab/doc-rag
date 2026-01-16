@@ -236,20 +236,23 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                 for el in elements_list:
                     # 'el' is now a dictionary
                     category = el.get("type")
-                    text = el.get("text", "")
                     el_metadata = el.get("metadata", {})
                     
                     if category == "Table" and "text_as_html" in el_metadata:
                         # Convert table to markdown
                         markdown = html_to_markdown(el_metadata["text_as_html"])
-                        reconstructed_parts.append(__TEXT_CLEANER.clean_chunk_text(markdown, table=True))
+                        # reconstructed_parts.append(__TEXT_CLEANER.clean_chunk_text(markdown, table=True))
+                        reconstructed_parts.append(markdown)
                     else:
                         # Clean normal text lines using your TextCleaner
-                        cleaned_text = __TEXT_CLEANER.clean_chunk_text(text)
-                        if cleaned_text:
-                            reconstructed_parts.append(cleaned_text)
+                        text = el.get("text", "")
+                        # cleaned_text = __TEXT_CLEANER.clean_chunk_text(text)
+                        if text.strip():
+                            reconstructed_parts.append(text)
                 
-                chunk.page_content = "\n\n".join(reconstructed_parts)
+                reconstructed_text = "\n".join(reconstructed_parts)
+
+                chunk.page_content = __TEXT_CLEANER.clean_chunk_text(reconstructed_text)
                 print(chunk.page_content)
                 continue # Move to next chunk
                 
