@@ -180,7 +180,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
     # Initialize the modern UnstructuredLoader
     loader = UnstructuredLoader(
         file_path=file_path,
-        strategy="hi_res",
+        strategy="fast",
         partition_via_api=False,
         infer_table_structure=True,   # Critical for keeping tables together
         languages=["deu", "eng"],
@@ -225,7 +225,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
         print(orig_elements_raw)
         
         if isinstance(orig_elements_raw, str) and len(orig_elements_raw) > 0:
-            print("\n\n\n\n\n\n1111111\n\n\n\n\n")
+            # print("\n\n\n\n\n\n1111111\n\n\n\n\n")
             try:
                 # DECOMPRESS: Unstructured uses Gzip + Base64 for serialization
                 decoded_bytes = base64.b64decode(orig_elements_raw)
@@ -242,7 +242,7 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                         # Convert table to markdown
                         markdown = html_to_markdown(el_metadata["text_as_html"])
                         # reconstructed_parts.append(__TEXT_CLEANER.clean_chunk_text(markdown, table=True))
-                        print("md---->", markdown)
+                        # print("md---->", markdown)
                         reconstructed_parts.append(markdown)
                     else:
                         # Clean normal text lines using your TextCleaner
@@ -250,27 +250,27 @@ async def split_pdf(file_path: str) -> tuple[list[Document], int]:
                         # cleaned_text = __TEXT_CLEANER.clean_chunk_text(text)
                         if text.strip():
                             reconstructed_parts.append(text)
-                        print("text---->", text)
+                        # print("text---->", text)
                 
                 reconstructed_text = "\n".join(reconstructed_parts)
 
                 chunk.page_content = __TEXT_CLEANER.clean_chunk_text(reconstructed_text)
-                print(chunk.page_content)
+                # print(chunk.page_content)
                 continue # Move to next chunk
                 
             except Exception as e:
-                print("\n\n\n\n\n\n-----------------\n\n\n\n\n")
+                # print("\n\n\n\n\n\n-----------------\n\n\n\n\n")
                 print(f"Decompression failed: {e}")
                 # If decompression fails, we fall through to standard cleaning
 
         # 2. Fallback: Top-level Table check
         if chunk.metadata.get("category") == "Table" and "text_as_html" in chunk.metadata:
-            print("\n\n\n\n\n\n222222\n\n\n\n\n")
+            # print("\n\n\n\n\n\n222222\n\n\n\n\n")
             markdown = html_to_markdown(chunk.metadata["text_as_html"])
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(markdown, table=True)
         else:
             # 3. Fallback: Standard text cleaning
-            print("\n\n\n\n\n\n333333\n\n\n\n\n")
+            # print("\n\n\n\n\n\n333333\n\n\n\n\n")
             chunk.page_content = __TEXT_CLEANER.clean_chunk_text(chunk.page_content)
             print(chunk.page_content)
 
